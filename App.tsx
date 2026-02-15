@@ -9,6 +9,8 @@ import { OmniScadaSection } from './components/OmniScadaSection';
 import { VoltaSection } from './components/VoltaSection';
 import { MercuriaSection } from './components/MercuriaSection';
 import { SettingsSection } from './components/SettingsSection';
+import { WeatherForecast } from './components/WeatherForecast';
+import { FusionSolarDashboard } from './components/FusionSolarDashboard';
 import { Menu, Sun, Bell, User as UserIcon } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -26,6 +28,8 @@ const App: React.FC = () => {
       case 'helio-sf': return <HeliosChat />;
       case 'atlas': return <AtlasChat />;
       case 'settings': return <SettingsSection />;
+      case 'weather': return <WeatherForecast />;
+      case 'fusionsolar': return <FusionSolarDashboard />;
       default: return <Dashboard />;
     }
   };
@@ -73,7 +77,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Content Area - Changed to flex-1 and overflow-hidden to let children manage scroll */}
+        {/* Content Area */}
         <main className="flex-1 overflow-hidden bg-[#020617]">
           <div className="max-w-7xl mx-auto h-full w-full">
             {renderContent()}

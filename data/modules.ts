@@ -1,3 +1,4 @@
+
 import { Module, Priority, ModuleCategory } from '../types';
 
 export const phases = [
@@ -28,7 +29,7 @@ export const modules: Module[] = [
     priority: Priority.CRITICAL, category: 'O&M & Analytics', phase: 1,
     description: 'Imagistică IR drone/fixe pentru detectare hot spots. Previne pierderi 2-5%.',
     financialImpact: { savings: '€156,000/an', roi: 'High' },
-    apis: [{ provider: 'DJI SDK', protocol: 'Mobile SDK' }, { provider: 'FLIR', protocol: 'API' }]
+    apis: [{ provider: 'DJI SDK', protocol: 'Mobile SDK' }, { provider: 'FLIR', protocol: 'API' }, { provider: 'Planet Labs', protocol: 'REST' }]
   },
   {
     id: 'm4', number: 4, title: 'Analiza Murdăriei prin Satelit',
@@ -85,7 +86,7 @@ export const modules: Module[] = [
   { id: 'm12', number: 12, title: 'Previziunea Predicțivă a Defecțiunilor', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Alertare cu 90 zile avans.', financialImpact: { roi: 'Maintenance Savings' }, apis: [] },
   { id: 'm13', number: 13, title: 'Optimizator de Piese de Schimb', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Inventory management AI.', financialImpact: { savings: '€4.2M capital freed' }, apis: [] },
   { id: 'm14', number: 14, title: 'Amprenta de Carbon & ESG', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Raportare automată GRI/SASB.', financialImpact: { revenue: 'Carbon Credits' }, apis: [] },
-  { id: 'm15', number: 15, title: 'Monitorizarea Biodiversității', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Tracking specii protejate (Dropia).', financialImpact: { roi: 'Compliance' }, apis: [] },
+  { id: 'm15', number: 15, title: 'Monitorizarea Biodiversității', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Tracking specii protejate (Dropia) via satelit.', financialImpact: { roi: 'Compliance' }, apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'NDVI Vegetation Monitoring' }] },
   { id: 'm16', number: 16, title: 'Digital Twin', priority: Priority.ESSENTIAL, category: 'Compute & Digital', phase: 2, description: 'Simulare procese cu 97.8% acuratețe.', financialImpact: { roi: 'Simulation' }, apis: [] },
   { id: 'm17', number: 17, title: 'Învățare între Parcuri', priority: Priority.ESSENTIAL, category: 'Compute & Digital', phase: 2, description: 'Federated Learning.', financialImpact: { roi: 'Knowledge Transfer' }, apis: [] },
   { id: 'm18', number: 18, title: 'Real-Time Energy Arbitrage', priority: Priority.ESSENTIAL, category: 'Grid & Trading', phase: 2, description: 'Trading automat intraday/day-ahead.', financialImpact: { revenue: '+34.7% revenue' }, apis: [] },
@@ -94,7 +95,7 @@ export const modules: Module[] = [
 
   // --- FAZA 3: AVANSATE (21-30) ---
   { id: 'm21', number: 21, title: 'Fire Risk Prediction', priority: Priority.ADVANCED, category: 'Resilience', phase: 3, description: 'Prevenire incendii.', financialImpact: { savings: '€8.1M/event prevented' }, apis: [] },
-  { id: 'm22', number: 22, title: 'Flood Resilience', priority: Priority.ADVANCED, category: 'Resilience', phase: 3, description: 'Reducere risc inundații 93%.', financialImpact: { savings: 'Asset Protection' }, apis: [] },
+  { id: 'm22', number: 22, title: 'Flood Resilience', priority: Priority.ADVANCED, category: 'Resilience', phase: 3, description: 'Reducere risc inundații 93% via monitorizare satelitară.', financialImpact: { savings: 'Asset Protection' }, apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Change Detection' }] },
   { id: 'm23', number: 23, title: 'Robotic Maintenance', priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, description: 'Curățare automată.', financialImpact: { roi: '352% ROI' }, apis: [] },
   { id: 'm24', number: 24, title: 'Panel DNA Analysis', priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, description: 'Combatere fraudă echipamente.', financialImpact: { savings: '€7.7M fraud detected' }, apis: [] },
   { id: 'm25', number: 25, title: 'Islanded Microgrid', priority: Priority.ADVANCED, category: 'Grid & Trading', phase: 3, description: 'Operare independentă de rețea.', financialImpact: { roi: 'Resilience' }, apis: [] },

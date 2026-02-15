@@ -1,6 +1,7 @@
 import React from 'react';
 import { Module } from '../types';
 import { X, ExternalLink, Copy, Terminal } from 'lucide-react';
+import { PlanetSoilingAnalysis } from './PlanetSoilingAnalysis';
 
 interface ModuleDetailProps {
   module: Module;
@@ -11,7 +12,7 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ module, onClose }) =
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="relative w-full max-w-2xl bg-slate-900 border-l border-slate-700 h-full overflow-y-auto shadow-2xl">
+      <div className="relative w-full max-w-3xl bg-slate-900 border-l border-slate-700 h-full overflow-y-auto shadow-2xl">
         <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 border-b border-slate-800 p-6 flex items-center justify-between">
           <div>
             <span className="text-amber-500 font-mono text-sm mb-1 block">MODULE {module.number}</span>
@@ -23,6 +24,14 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ module, onClose }) =
         </div>
 
         <div className="p-8 space-y-8">
+          {/* SPECIAL INTEGRATION: MOD-04 Planet Labs */}
+          {module.id === 'm4' && (
+            <section className="mb-8 animate-in slide-in-from-right-4 duration-500">
+               <PlanetSoilingAnalysis />
+               <div className="my-8 border-t border-slate-800"></div>
+            </section>
+          )}
+
           {/* Overview */}
           <section>
             <h3 className="text-lg font-semibold text-white mb-3">Overview</h3>
