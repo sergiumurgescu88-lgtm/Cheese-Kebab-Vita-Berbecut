@@ -25,7 +25,7 @@ export const PlanetSoilingAnalysis: React.FC = () => {
       if (res.success) {
         setTestResult({ status: 'success', message: 'Credentials Verified' });
         addLog("SUCCESS: Connection established to Planet Data API v1.");
-        addLog(`Metadata Received: Found ${res.data.item_types.length} item types.`);
+        addLog(`Metadata Received: Found ${res.data.item_types ? res.data.item_types.length : 0} item types.`);
       } else {
         setTestResult({ status: 'error', message: res.error || 'Connection Failed' });
         addLog(`ERROR: Connection refused. ${res.error}`);
@@ -143,7 +143,11 @@ export const PlanetSoilingAnalysis: React.FC = () => {
                  </div>
                  <div className="space-y-1 min-h-[140px] max-h-[140px] overflow-y-auto custom-scrollbar">
                     {log.length === 0 ? <p className="text-[10px] text-slate-700 italic">Waiting for command initiation...</p> : 
-                     log.map((l, i) => <p key={i} className={`text-[10px] leading-relaxed ${l.includes('ERROR') ? 'text-red-400' : 'text-teal-500/80'}`}>{l}</p>)}
+                     log.map((l, i) => (
+                       <p key={i} className={`text-[10px] leading-relaxed ${l.includes('ERROR') ? 'text-red-400' : 'text-teal-500/80'}`}>
+                         {l}
+                       </p>
+                     ))}
                  </div>
               </div>
             </div>
@@ -151,7 +155,7 @@ export const PlanetSoilingAnalysis: React.FC = () => {
             {/* Visualizer Area */}
             <div className="relative">
                <div className="bg-slate-950 rounded-3xl border border-slate-700 aspect-video overflow-hidden relative shadow-inner group">
-                  <div className="absolute inset-0 bg-[url('https://tiles.planet.com/basemaps/v1/planet-tiles/global_monthly_2024_01_mosaic/gmap/0/0/0.png?api_key=PLAK965b839381d24a93846595d6932779ca')] bg-cover opacity-10 grayscale group-hover:grayscale-0 transition-all duration-1000"></div>
+                  <div className="absolute inset-0 bg-cover opacity-10 grayscale group-hover:grayscale-0 transition-all duration-1000" style={{ backgroundImage: `url('https://tiles.planet.com/basemaps/v1/planet-tiles/global_monthly_2024_01_mosaic/gmap/0/0/0.png?api_key=${VERIFIED_CREDENTIALS.apiKey}')` }}></div>
                   
                   {/* Dynamic Target Finder */}
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -200,7 +204,7 @@ export const PlanetSoilingAnalysis: React.FC = () => {
                   <p className="text-[10px] text-slate-500 mb-2 font-mono uppercase">Reference Command:</p>
                   <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between group">
                     <code className="text-[9px] text-teal-500/80 font-mono">curl -u "PLAK965b...:" https://api.planet.com/...</code>
-                    <button className="text-slate-500 hover:text-white"><Copy className="w-3 h-3" /></button>
+                    <button className="text-slate-500 hover:text-white" onClick={() => navigator.clipboard.writeText(`curl -u "${VERIFIED_CREDENTIALS.apiKey}:" https://api.planet.com/data/v1/item-types`)}><Copy className="w-3 h-3" /></button>
                   </div>
                 </div>
               </div>
