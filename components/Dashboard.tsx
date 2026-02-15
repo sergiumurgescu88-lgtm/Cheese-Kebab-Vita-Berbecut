@@ -23,6 +23,7 @@ const powerData = [
 export const Dashboard: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar">
+      
       {/* Top Stats - Responsive Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[

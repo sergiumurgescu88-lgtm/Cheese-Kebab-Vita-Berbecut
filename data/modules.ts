@@ -12,16 +12,27 @@ export const modules: Module[] = [
   {
     id: 'm1', number: 1, title: 'Virtual Power Plant Orchestrator (VPP)',
     priority: Priority.CRITICAL, category: 'Grid & Trading', phase: 1,
-    description: 'Agregare parcuri solare în centrală electrică virtuală. Grid-forming, black start, response 0.092s.',
-    financialImpact: { npv: '€47M (10 ani)', revenue: '40-60% savings vs peaker' },
-    apis: [{ provider: 'Huawei FusionSolar', protocol: 'REST' }, { provider: 'OpenADR 2.0b', protocol: 'HTTPS' }]
+    description: 'Agregare parcuri solare în centrală electrică virtuală. Grid-forming capability, black start enabled, response time 0.092s (92ms) strict requirement.',
+    financialImpact: { npv: '€47M (10 ani)', revenue: '40-60% savings vs peaker plants' },
+    apis: [
+      { 
+        provider: 'Huawei FusionSolar', 
+        protocol: 'REST', 
+        description: 'Solar plant control and monitoring via Northbound API' 
+      }, 
+      { 
+        provider: 'OpenADR 2.0b', 
+        protocol: 'HTTPS', 
+        description: 'Standard demand response & grid communication protocol' 
+      }
+    ]
   },
   {
     id: 'm2', number: 2, title: 'Frequency Regulation & Ancillary Services',
     priority: Priority.CRITICAL, category: 'Grid & Trading', phase: 1,
-    description: 'Reglaj frecvență (AGC), rezerve spinning. Piața globală $18.26B.',
-    financialImpact: { npv: '€52M (10 ani)', revenue: '$3.68M-$10M/year per site' },
-    apis: [{ provider: 'Grid Monitor', protocol: 'MQTT' }]
+    description: 'Frequency Containment Reserves (FCR) & Automatic Frequency Restoration (aFRR). Grid Monitor via MQTT.',
+    financialImpact: { npv: '€52M (10 years)', revenue: '$3.68M-$10M/year per site' },
+    apis: [{ provider: 'Grid Monitor', protocol: 'MQTT', description: 'Real-time TSO telemetry uplink' }]
   },
   {
     id: 'm3', number: 3, title: 'Detecția Anomaliilor Termice',
@@ -31,7 +42,7 @@ export const modules: Module[] = [
     apis: [
       { provider: 'DJI SDK', protocol: 'Mobile SDK' },
       { provider: 'FLIR', protocol: 'API' },
-      { provider: 'Planet Labs', protocol: 'REST', description: 'Thermal context and high-res RGB basemaps' }
+      { provider: 'Planet Labs', protocol: 'REST', description: 'Thermal context and site-wide RGB visual basemaps' }
     ]
   },
   {
@@ -39,7 +50,7 @@ export const modules: Module[] = [
     priority: Priority.CRITICAL, category: 'O&M & Analytics', phase: 1,
     description: 'Planet Labs 3m resolution. Calcul ROI curățare (recuperare 18 zile).',
     financialImpact: { savings: '3-8% producție', roi: '18 zile' },
-    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Daily satellite monitoring for soiling detection' }]
+    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Daily satellite monitoring for soiling index detection' }]
   },
   {
     id: 'm5', number: 5, title: 'AI pentru Anomalii de Producție',
@@ -83,7 +94,7 @@ export const modules: Module[] = [
     financialImpact: { savings: 'Warranty Enforcement', roi: 'Asset Life Extension' },
     apis: [
       { provider: 'Raptor Maps', protocol: 'REST' },
-      { provider: 'Planet Labs', protocol: 'REST', description: 'Visual degradation and vegetation encroachment tracking' }
+      { provider: 'Planet Labs', protocol: 'REST', description: 'Visual degradation and site vegetation encroachment tracking' }
     ]
   },
 
@@ -92,7 +103,13 @@ export const modules: Module[] = [
   { id: 'm12', number: 12, title: 'Previziunea Predicțivă a Defecțiunilor', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Alertare cu 90 zile avans.', financialImpact: { roi: 'Maintenance Savings' }, apis: [] },
   { id: 'm13', number: 13, title: 'Optimizator de Piese de Schimb', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Inventory management AI.', financialImpact: { savings: '€4.2M capital freed' }, apis: [] },
   { id: 'm14', number: 14, title: 'Amprenta de Carbon & ESG', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Raportare automată GRI/SASB.', financialImpact: { revenue: 'Carbon Credits' }, apis: [] },
-  { id: 'm15', number: 15, title: 'Monitorizarea Biodiversității', priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, description: 'Tracking specii protejate (Dropia) via satelit.', financialImpact: { roi: 'Compliance' }, apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'NDVI Vegetation Monitoring' }] },
+  { 
+    id: 'm15', number: 15, title: 'Monitorizarea Biodiversității', 
+    priority: Priority.ESSENTIAL, category: 'O&M & Analytics', phase: 2, 
+    description: 'Tracking specii protejate (Dropia) via satelit și indicatori de sănătate vegetală.', 
+    financialImpact: { roi: 'Compliance' }, 
+    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'NDVI (Normalized Difference Vegetation Index) monitoring' }] 
+  },
   { id: 'm16', number: 16, title: 'Digital Twin', priority: Priority.ESSENTIAL, category: 'Compute & Digital', phase: 2, description: 'Simulare procese cu 97.8% acuratețe.', financialImpact: { roi: 'Simulation' }, apis: [] },
   { id: 'm17', number: 17, title: 'Învățare între Parcuri', priority: Priority.ESSENTIAL, category: 'Compute & Digital', phase: 2, description: 'Federated Learning.', financialImpact: { roi: 'Knowledge Transfer' }, apis: [] },
   { id: 'm18', number: 18, title: 'Real-Time Energy Arbitrage', priority: Priority.ESSENTIAL, category: 'Grid & Trading', phase: 2, description: 'Trading automat intraday/day-ahead.', financialImpact: { revenue: '+34.7% revenue' }, apis: [] },
@@ -101,12 +118,13 @@ export const modules: Module[] = [
 
   // --- FAZA 3: AVANSATE (21-30) ---
   { 
-    id: 'm21', number: 21, title: 'Fire Risk Prediction', priority: Priority.ADVANCED, category: 'Resilience', phase: 3, 
-    description: 'Prevenire incendii prin monitorizarea nivelului de uscăciune al vegetației.', 
+    id: 'm21', number: 21, title: 'Fire Risk Prediction', 
+    priority: Priority.ADVANCED, category: 'Resilience', phase: 3, 
+    description: 'Prevenire incendii prin monitorizarea biomasei uscate.', 
     financialImpact: { savings: '€8.1M/event prevented' }, 
-    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Fuel load and vegetation health monitoring' }] 
+    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Near-Infrared dryness detection' }] 
   },
-  { id: 'm22', number: 22, title: 'Flood Resilience', priority: Priority.ADVANCED, category: 'Resilience', phase: 3, description: 'Reducere risc inundații 93% via monitorizare satelitară.', financialImpact: { savings: 'Asset Protection' }, apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Change Detection' }] },
+  { id: 'm22', number: 22, title: 'Flood Resilience', priority: Priority.ADVANCED, category: 'Resilience', phase: 3, description: 'Reducere risc inundații 93% via monitorizare satelitară.', financialImpact: { savings: 'Asset Protection' }, apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Radar and Optical Change Detection' }] },
   { id: 'm23', number: 23, title: 'Robotic Maintenance', priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, description: 'Curățare automată.', financialImpact: { roi: '352% ROI' }, apis: [] },
   { id: 'm24', number: 24, title: 'Panel DNA Analysis', priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, description: 'Combatere fraudă echipamente.', financialImpact: { savings: '€7.7M fraud detected' }, apis: [] },
   { id: 'm25', number: 25, title: 'Islanded Microgrid', priority: Priority.ADVANCED, category: 'Grid & Trading', phase: 3, description: 'Operare independentă de rețea.', financialImpact: { roi: 'Resilience' }, apis: [] },
@@ -114,10 +132,11 @@ export const modules: Module[] = [
   { id: 'm27', number: 27, title: 'Solar Spectrum Optimizer', priority: Priority.ADVANCED, category: 'Advanced PV', phase: 3, description: 'Adaptare la spectru lumina.', financialImpact: { npv: '€14.2M' }, apis: [] },
   { id: 'm28', number: 28, title: 'EMI Mapping', priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, description: 'Harta interferențe electromagnetice.', financialImpact: { npv: '€36.2M' }, apis: [] },
   { 
-    id: 'm29', number: 29, title: 'Intelligent Cleaning Scheduler', priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, 
-    description: 'Optimizare orar curățare bazat pe ratele de acumulare a prafului detectate.', 
+    id: 'm29', number: 29, title: 'Intelligent Cleaning Scheduler', 
+    priority: Priority.ADVANCED, category: 'O&M & Analytics', phase: 3, 
+    description: 'Optimizare orar curățare bazat pe datele de soiling satelitare.', 
     financialImpact: { savings: '€584K/an' }, 
-    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Automated soiling rate detection' }] 
+    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Automated soiling rate ingestion' }] 
   },
   { id: 'm30', number: 30, title: 'Gamified Performance', priority: Priority.ADVANCED, category: 'Compute & Digital', phase: 3, description: 'Competiție între echipe O&M.', financialImpact: { revenue: '+11.4% productivity' }, apis: [] },
 
@@ -131,10 +150,11 @@ export const modules: Module[] = [
   { id: 'm37', number: 37, title: 'Perovskite-Silicon Tandem', priority: Priority.INNOVATIVE, category: 'Advanced PV', phase: 4, description: 'Eficiență 34.6%.', financialImpact: { roi: 'Next Gen' }, apis: [] },
   { id: 'm38', number: 38, title: 'Temperature Coefficient Optimizer', priority: Priority.INNOVATIVE, category: 'Advanced PV', phase: 4, description: 'Mitigare căldură.', financialImpact: { roi: 'Desert Efficiency' }, apis: [] },
   { 
-    id: 'm39', number: 39, title: 'Hyperspectral Diagnostics', priority: Priority.INNOVATIVE, category: 'O&M & Analytics', phase: 4, 
-    description: 'Defecte invizibile detectate prin analiză hiperspectrală satelitară.', 
+    id: 'm39', number: 39, title: 'Hyperspectral Diagnostics', 
+    priority: Priority.INNOVATIVE, category: 'O&M & Analytics', phase: 4, 
+    description: 'Analiză spectrală avansată pentru detectarea problemelor materiale.', 
     financialImpact: { roi: 'Deep Inspection' }, 
-    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Hyperspectral tasking and analysis' }] 
+    apis: [{ provider: 'Planet Labs', protocol: 'REST', description: 'Hyperspectral satellite tasking' }] 
   },
   { id: 'm40', number: 40, title: 'Cryptocurrency Mining Optimizer', priority: Priority.INNOVATIVE, category: 'Compute & Digital', phase: 4, description: 'Mining în curtailment.', financialImpact: { revenue: 'Monetize Waste' }, apis: [] },
   

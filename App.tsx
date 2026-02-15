@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ModulesInventory } from './components/ModulesInventory';
@@ -11,11 +11,24 @@ import { MercuriaSection } from './components/MercuriaSection';
 import { SettingsSection } from './components/SettingsSection';
 import { WeatherForecast } from './components/WeatherForecast';
 import { FusionSolarDashboard } from './components/FusionSolarDashboard';
-import { Menu, Sun, Bell, User as UserIcon } from 'lucide-react';
+import { GlobalCommandPalette } from './components/GlobalCommandPalette';
+import { Menu, Sun, Bell, User as UserIcon, Command } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -43,6 +56,11 @@ const App: React.FC = () => {
         onClose={() => setIsSidebarOpen(false)}
       />
       
+      <GlobalCommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onClose={() => setIsCommandPaletteOpen(false)} 
+      />
+
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
         
@@ -67,6 +85,14 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
+             <button 
+               onClick={() => setIsCommandPaletteOpen(true)}
+               className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-500 hover:text-white hover:border-slate-500 transition-all"
+             >
+               <Command className="w-3 h-3" />
+               <span>Quick Search...</span>
+               <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">⌘K</span>
+             </button>
              <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg relative">
                <Bell className="w-5 h-5" />
                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-amber-500 rounded-full border border-[#020617]"></span>

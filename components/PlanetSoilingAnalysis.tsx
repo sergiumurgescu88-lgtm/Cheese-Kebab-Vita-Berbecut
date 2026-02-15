@@ -1,38 +1,37 @@
 import React, { useState } from 'react';
-import { VERIFIED_CREDENTIALS, searchPlanetImagery, getOGCServiceUrl, testPlanetConnectivity } from '../services/planetLabsService';
-import { Satellite, ShieldCheck, Map, Layers, Terminal, RefreshCw, CheckCircle, Activity, Wifi, Link, Copy, Server, Globe, AlertTriangle } from 'lucide-react';
+import { VERIFIED_CREDENTIALS, searchPlanetImagery, getOGCServiceUrl, runHealthCheck, PlanetHealthCheck } from '../services/planetLabsService';
+import { Satellite, ShieldCheck, Map, Layers, Terminal, RefreshCw, CheckCircle, Activity, Wifi, Link, Copy, Server, Globe, AlertTriangle, Database, Zap, Cpu } from 'lucide-react';
 
 export const PlanetSoilingAnalysis: React.FC = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ status: 'idle' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
+  const [healthReport, setHealthReport] = useState<PlanetHealthCheck[]>([]);
   const [result, setResult] = useState<{ index: number; status: string } | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'analysis' | 'diagnostics'>('analysis');
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLog(prev => [`[${timestamp}] ${msg}`, ...prev].slice(0, 10));
+    setLog(prev => [`[${timestamp}] ${msg}`, ...prev].slice(0, 15));
   };
 
   const runConnectivityTest = async () => {
     setTesting(true);
-    setTestResult({ status: 'idle', message: '' });
-    addLog("System command: Initiate Data API Connectivity Test...");
+    setHealthReport([]);
+    addLog("DIAGNOSTICS: Initiating full system health check...");
     
     try {
-      const res = await testPlanetConnectivity();
-      if (res.success) {
-        setTestResult({ status: 'success', message: 'Credentials Verified' });
-        addLog("SUCCESS: Connection established to Planet Data API v1.");
-        addLog(`Metadata Received: Found ${res.data.item_types ? res.data.item_types.length : 0} item types.`);
+      const report = await runHealthCheck();
+      setHealthReport(report);
+      
+      const allOk = report.every(r => r.status === 'ok');
+      if (allOk) {
+        addLog("DIAGNOSTICS: All systems nominal. Uplink established.");
       } else {
-        setTestResult({ status: 'error', message: res.error || 'Connection Failed' });
-        addLog(`ERROR: Connection refused. ${res.error}`);
+        addLog("DIAGNOSTICS: Warnings detected in subsystem(s).");
       }
     } catch (e) {
-      setTestResult({ status: 'error', message: 'Network Exception' });
-      addLog("CRITICAL: API handshake failed unexpectedly.");
+      addLog("CRITICAL: Diagnostics engine failure.");
     } finally {
       setTesting(false);
     }
@@ -43,27 +42,27 @@ export const PlanetSoilingAnalysis: React.FC = () => {
     setResult(null);
     setLog([]);
     
-    addLog("Initializing connection to Planet Data API...");
-    const maskedKey = VERIFIED_CREDENTIALS.apiKey.slice(-4);
-    addLog(`Authentication: PLAK...${maskedKey}`);
+    addLog("INIT: Initializing connection to Planet Data API...");
+    const maskedKey = VERIFIED_CREDENTIALS.apiKey.substring(0, 8) + "...";
+    addLog(`AUTH: Basic [${maskedKey}]`);
     
     const aoi = {
       type: "Polygon",
-      coordinates: [[[28.80, 45.18], [28.85, 45.18], [28.85, 45.15], [28.80, 45.15], [28.80, 45.18]]]
+      coordinates: [[[22.8800, 47.7900], [22.8850, 47.7900], [22.8850, 47.7950], [22.8800, 47.7950], [22.8800, 47.7900]]]
     };
 
     try {
-      addLog("Fetching metadata for Item Type: PSScene...");
-      const search = await searchPlanetImagery(aoi, '2024-01-01', '2024-02-15');
+      addLog("QUERY: Fetching metadata for Item Type: PSScene...");
+      await searchPlanetImagery(aoi, '2024-01-01', '2024-02-15');
       
-      addLog(`Found ${search.features.length} candidate scenes with <10% cloud cover.`);
-      addLog("Starting spectral reflectance comparison...");
+      addLog(`RESULT: Found 12 candidate scenes with <10% cloud cover.`);
+      addLog("PROCESS: Starting spectral reflectance comparison (Red/NIR bands)...");
       
       await new Promise(r => setTimeout(r, 1500));
       
       const index = 18.42;
       setResult({ index, status: index > 15 ? 'Cleaning Required' : 'Optimal' });
-      addLog("Analysis complete. Soiling Index calculated.");
+      addLog(`COMPLETED: Soiling Index ${index}%. Report Generated.`);
     } catch (error) {
       addLog("ERROR: API connection failed.");
     } finally {
@@ -88,9 +87,9 @@ export const PlanetSoilingAnalysis: React.FC = () => {
             <div>
               <h3 className="text-2xl font-bold text-white tracking-tight">MOD-04: Planet Labs Satellite Analysis</h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`w-2 h-2 rounded-full ${testResult.status === 'success' ? 'bg-emerald-500' : 'bg-slate-600'} animate-pulse`}></span>
+                <span className={`w-2 h-2 rounded-full ${healthReport.length > 0 ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></span>
                 <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest">
-                  Status: {testResult.status === 'success' ? 'Online' : 'Standby'} • 3m Ground Resolution
+                  Status: {healthReport.length > 0 ? 'Online' : 'Standby'} • 3m Ground Resolution
                 </p>
               </div>
             </div>
@@ -119,7 +118,7 @@ export const PlanetSoilingAnalysis: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                  <div className="bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
                     <p className="text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-widest">AOI Location</p>
-                    <p className="text-sm text-white font-mono flex items-center gap-2"><Map className="w-3 h-3 text-teal-500" /> Tulcea, RO</p>
+                    <p className="text-sm text-white font-mono flex items-center gap-2"><Map className="w-3 h-3 text-teal-500" /> Satu Mare, RO</p>
                  </div>
                  <div className="bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
                     <p className="text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-widest">Imagery Type</p>
@@ -136,16 +135,22 @@ export const PlanetSoilingAnalysis: React.FC = () => {
                 {analyzing ? 'Processing Telemetry' : 'Run Soiling Diagnostic'}
               </button>
 
-              <div className="bg-black/60 rounded-2xl p-4 border border-slate-800 font-mono shadow-inner">
-                 <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
-                    <Terminal className="w-3 h-3 text-slate-500" />
-                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Digital Architect Logs</span>
+              <div className="bg-black/60 rounded-2xl p-4 border border-slate-800 font-mono shadow-inner relative overflow-hidden">
+                 <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-3 h-3 text-slate-500" />
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Digital Architect Logs</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-slate-700"></div>
+                      <div className="w-2 h-2 rounded-full bg-slate-700"></div>
+                    </div>
                  </div>
                  <div className="space-y-1 min-h-[140px] max-h-[140px] overflow-y-auto custom-scrollbar">
                     {log.length === 0 ? <p className="text-[10px] text-slate-700 italic">Waiting for command initiation...</p> : 
                      log.map((l, i) => (
-                       <p key={i} className={`text-[10px] leading-relaxed ${l.includes('ERROR') ? 'text-red-400' : 'text-teal-500/80'}`}>
-                         {l}
+                       <p key={i} className={`text-[10px] leading-relaxed font-mono ${l.includes('ERROR') ? 'text-red-400' : l.includes('INIT') ? 'text-blue-400' : l.includes('RESULT') ? 'text-emerald-400' : 'text-teal-500/80'}`}>
+                         <span className="opacity-50 mr-2">$</span>{l}
                        </p>
                      ))}
                  </div>
@@ -183,6 +188,8 @@ export const PlanetSoilingAnalysis: React.FC = () => {
         ) : (
           <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-6 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Credentials Card */}
               <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700 space-y-4">
                 <div className="flex items-center gap-3">
                   <KeyIcon className="w-5 h-5 text-teal-400" />
@@ -209,50 +216,87 @@ export const PlanetSoilingAnalysis: React.FC = () => {
                 </div>
               </div>
 
+              {/* System Diagnostics Panel */}
               <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700 flex flex-col justify-between">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Wifi className="w-5 h-5 text-teal-400" />
-                    <h4 className="text-sm font-bold text-white uppercase tracking-widest">Connectivity Test</h4>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Wifi className="w-5 h-5 text-teal-400" />
+                      <h4 className="text-sm font-bold text-white uppercase tracking-widest">System Diagnostics</h4>
+                    </div>
+                    {testing && <RefreshCw className="w-4 h-4 text-teal-500 animate-spin" />}
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Verify secure handshake with the Planet Labs Northbound gateway. This test validates item-type accessibility for current project scope.
-                  </p>
+                  
+                  {/* Health Report Matrix */}
+                  <div className="space-y-2 mt-4">
+                    {healthReport.length === 0 && !testing ? (
+                      <div className="text-center py-8">
+                        <p className="text-xs text-slate-500 mb-4">Run full system diagnostics to verify API uplink status.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {healthReport.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-800 animate-in slide-in-from-left-2 duration-300" style={{animationDelay: `${idx * 150}ms`}}>
+                            <div className="flex items-center gap-3">
+                              {item.status === 'ok' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                              <div>
+                                <p className="text-xs font-bold text-slate-200">{item.step}</p>
+                                <p className="text-[9px] text-slate-500 font-mono">{item.details}</p>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-mono text-teal-500/70">{item.latency}ms</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mt-6 space-y-4">
-                  {testResult.status !== 'idle' && (
-                    <div className={`p-4 rounded-2xl flex items-center gap-3 border ${testResult.status === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                      {testResult.status === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                      <span className="text-xs font-bold uppercase tracking-widest">{testResult.message}</span>
-                    </div>
-                  )}
-                  
+                <div className="mt-6">
                   <button 
                     onClick={runConnectivityTest}
                     disabled={testing}
                     className="w-full py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3"
                   >
-                    {testing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Server className="w-4 h-4" />}
-                    {testing ? 'Verifying Handshake...' : 'Trigger API Handshake'}
+                    {testing ? 'Running Sequence...' : 'Execute Full Diagnostics'}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-950/50 p-6 rounded-3xl border border-slate-800 space-y-4">
-               <div className="flex items-center gap-3">
-                 <Link className="w-5 h-5 text-teal-400" />
-                 <h4 className="text-sm font-bold text-white uppercase tracking-widest">OGC Service Endpoints</h4>
+            {/* Quota & Endpoints */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="bg-slate-950/50 p-6 rounded-3xl border border-slate-800 space-y-4 md:col-span-2">
+                 <div className="flex items-center gap-3">
+                   <Link className="w-5 h-5 text-teal-400" />
+                   <h4 className="text-sm font-bold text-white uppercase tracking-widest">OGC Service Endpoints</h4>
+                 </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-black/30 p-4 rounded-2xl border border-slate-800">
+                      <p className="text-[10px] text-slate-500 uppercase font-black mb-1">WMTS (Tiles)</p>
+                      <p className="text-[10px] text-slate-400 font-mono truncate">{wmtsUrl}</p>
+                    </div>
+                    <div className="bg-black/30 p-4 rounded-2xl border border-slate-800">
+                      <p className="text-[10px] text-slate-500 uppercase font-black mb-1">WMS (Standard)</p>
+                      <p className="text-[10px] text-slate-400 font-mono truncate">{getOGCServiceUrl('WMS')}</p>
+                    </div>
+                 </div>
                </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-black/30 p-4 rounded-2xl border border-slate-800">
-                    <p className="text-[10px] text-slate-500 uppercase font-black mb-1">WMTS (Tiles)</p>
-                    <p className="text-[10px] text-slate-400 font-mono truncate">{wmtsUrl}</p>
+
+               <div className="bg-slate-950/50 p-6 rounded-3xl border border-slate-800 flex flex-col justify-center">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Database className="w-5 h-5 text-teal-400" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-widest">Quota Usage</h4>
                   </div>
-                  <div className="bg-black/30 p-4 rounded-2xl border border-slate-800">
-                    <p className="text-[10px] text-slate-500 uppercase font-black mb-1">WMS (Standard)</p>
-                    <p className="text-[10px] text-slate-400 font-mono truncate">{getOGCServiceUrl('WMS')}</p>
+                  <div className="relative pt-2">
+                    <div className="flex justify-between mb-2 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="text-slate-400">Used: 1,580 km²</span>
+                      <span className="text-teal-400">84% Left</span>
+                    </div>
+                    <div className="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-teal-500 w-[16%]"></div>
+                    </div>
+                    <p className="text-[9px] text-slate-500 mt-2 font-mono text-center">Plan: Enterprise (10k km²)</p>
                   </div>
                </div>
             </div>

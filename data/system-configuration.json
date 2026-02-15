@@ -1,0 +1,653 @@
+{
+  "system_name": "Solar Multi-Agent Management System",
+  "version": "1.0.0",
+  "total_modules": 47,
+  "total_agents": 7,
+  "gps_required": true,
+  "gps_precision_decimal_places": 4,
+  
+  "agents": {
+    "Atlas": {
+      "id": "atlas-001",
+      "type": "Orchestrator",
+      "description": "Central routing and coordination engine",
+      "priority": "P0",
+      "modules_count": 6,
+      "modules": [
+        {
+          "id": "MOD-16",
+          "name": "Digital Twin",
+          "description": "Simulare procese cu 97.8% acuratețe",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-17",
+          "name": "Federated Learning",
+          "description": "Învățare între parcuri - knowledge sharing",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-41",
+          "name": "Edge Computing Solar Microgrid",
+          "description": "Distributed AI la edge",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-45",
+          "name": "Quantum Computing Optimization",
+          "description": "Simulare complexă cu quantum",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P4"
+        },
+        {
+          "id": "MOD-46",
+          "name": "AI Self-Improvement Engine",
+          "description": "ROI infinit - auto-optimization",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": "INFINITE",
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-47",
+          "name": "Neural Network Auto-Retraining",
+          "description": "Adaptare continuă a modelelor",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        }
+      ],
+      "tech_stack": {
+        "ai": ["TensorFlow", "PyTorch", "Gemini API"],
+        "database": ["MongoDB", "TimescaleDB"],
+        "orchestration": ["Apache Kafka", "RabbitMQ"],
+        "compute": ["Kubernetes", "Cloud Run"]
+      },
+      "responsibilities": [
+        "GPS validation and plant identification",
+        "Request routing to appropriate agents",
+        "Multi-agent orchestration",
+        "Response aggregation",
+        "System-wide optimization"
+      ]
+    },
+    
+    "FusionSolar": {
+      "id": "fusionsolar-001",
+      "type": "Weather & Environment",
+      "description": "Weather intelligence and environmental monitoring",
+      "priority": "P0",
+      "modules_count": 7,
+      "modules": [
+        {
+          "id": "MOD-03",
+          "name": "Thermal Anomaly Detection",
+          "description": "Imagistică IR drone/fixe pentru hot spots",
+          "category": "Critical",
+          "apis_required": 3,
+          "revenue_10yr_eur": null,
+          "loss_prevention_percent": "2-5%",
+          "implementation_priority": "P1",
+          "shared_with": ["Helio"]
+        },
+        {
+          "id": "MOD-04",
+          "name": "Satellite Soiling Analysis",
+          "description": "Planet Labs 3m resolution - ROI curățare",
+          "category": "Critical",
+          "apis_required": 1,
+          "revenue_10yr_eur": null,
+          "cleaning_roi_days": 18,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-06",
+          "name": "Weather Predictions Adaptées",
+          "description": "Prognoză hyperlocală GHI/DNI pentru dispatch",
+          "category": "Critical",
+          "apis_required": 2,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P0",
+          "is_primary": true
+        },
+        {
+          "id": "MOD-21",
+          "name": "Fire Risk Prediction",
+          "description": "Prevenire incendii prin biomass monitoring",
+          "category": "Advanced",
+          "apis_required": 1,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-22",
+          "name": "Flood Resilience",
+          "description": "Reducere risc 93% via satelit",
+          "category": "Advanced",
+          "apis_required": 1,
+          "revenue_10yr_eur": null,
+          "risk_reduction_percent": 93,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-29",
+          "name": "Intelligent Cleaning Scheduler",
+          "description": "Optimizare cleaning bazat pe soiling satelitar",
+          "category": "Advanced",
+          "apis_required": 1,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-38",
+          "name": "Temperature Coefficient Optimizer",
+          "description": "Mitigare impact căldură",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        }
+      ],
+      "tech_stack": {
+        "weather_apis": ["OpenWeatherMap", "MeteoBlue", "Copernicus"],
+        "satellite": ["Planet Labs", "Sentinel-2", "Landsat"],
+        "storage": ["Google Cloud Storage", "BigQuery"]
+      },
+      "api_integrations": [
+        "OpenWeatherMap API",
+        "MeteoBlue Hyperlocal API",
+        "Planet Labs Satellite API",
+        "Copernicus Climate Data Store"
+      ]
+    },
+    
+    "OMNI-SCADA": {
+      "id": "omniscada-001",
+      "type": "Monitoring & Control",
+      "description": "Real-time SCADA monitoring and anomaly detection",
+      "priority": "P0",
+      "modules_count": 10,
+      "modules": [
+        {
+          "id": "MOD-05",
+          "name": "AI Production Anomaly Detection",
+          "description": "Detectare defecte PID/string cu TensorFlow",
+          "category": "Critical",
+          "apis_required": 1,
+          "revenue_10yr_eur": 23000000,
+          "precision_percent": 94.7,
+          "implementation_priority": "P0",
+          "is_primary": true
+        },
+        {
+          "id": "MOD-10",
+          "name": "Precise Degradation Tracking",
+          "description": "Monitorizare 1.79M panouri individual",
+          "category": "Essential",
+          "apis_required": 2,
+          "revenue_10yr_eur": null,
+          "failure_prediction_months": 6,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-11",
+          "name": "Performance Benchmarking",
+          "description": "Comparație PR între parcuri",
+          "category": "Essential",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-12",
+          "name": "Predictive Failure Forecasting",
+          "description": "Alertare cu 90 zile avans",
+          "category": "Essential",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "advance_warning_days": 90,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-13",
+          "name": "Spare Parts Optimizer",
+          "description": "Inventory management AI",
+          "category": "Essential",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-23",
+          "name": "Robotic Maintenance",
+          "description": "Curățare automată cu roboți",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-24",
+          "name": "Panel DNA Analysis",
+          "description": "Combatere fraudă echipamente",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-26",
+          "name": "Acoustic Monitoring",
+          "description": "Ascultare defecțiuni echipamente",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-28",
+          "name": "EMI Mapping",
+          "description": "Harta interferențe electromagnetice",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": 36200000,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-30",
+          "name": "Gamified Performance",
+          "description": "Competiție între echipe O&M",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        }
+      ],
+      "tech_stack": {
+        "protocols": ["Modbus TCP", "IEC 61850", "DNP3"],
+        "database": ["InfluxDB", "PostgreSQL", "TimescaleDB"],
+        "ai": ["Scikit-learn", "TensorFlow", "PyTorch"]
+      },
+      "monitoring_capacity": {
+        "panels_individual": 1790000,
+        "data_points_per_second": 50000,
+        "anomaly_detection_latency_ms": 100
+      }
+    },
+    
+    "VOLTA": {
+      "id": "volta-001",
+      "type": "Grid & Power Control",
+      "description": "VPP orchestration and frequency regulation",
+      "priority": "P0",
+      "modules_count": 10,
+      "modules": [
+        {
+          "id": "MOD-01",
+          "name": "Virtual Power Plant Orchestrator",
+          "description": "Agregare VPP, grid-forming, black start",
+          "category": "Critical",
+          "apis_required": 2,
+          "revenue_10yr_eur": 47000000,
+          "response_time_seconds": 0.092,
+          "implementation_priority": "P0",
+          "is_primary": true
+        },
+        {
+          "id": "MOD-02",
+          "name": "Frequency Regulation & Ancillary Services",
+          "description": "AGC, rezerve spinning - piață $18.26B",
+          "category": "Critical",
+          "apis_required": 1,
+          "revenue_10yr_eur": 52000000,
+          "implementation_priority": "P0",
+          "is_primary": true
+        },
+        {
+          "id": "MOD-09",
+          "name": "Long-Duration Energy Storage (LDES)",
+          "description": "Stocare multi-day pentru grid stability",
+          "category": "Critical",
+          "apis_required": 1,
+          "revenue_10yr_eur": 71000000,
+          "storage_types": ["Flow Batteries", "Compressed Air"],
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-25",
+          "name": "Islanded Microgrid",
+          "description": "Operare independentă de rețea",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-31",
+          "name": "Grid-Forming Inverter Tech",
+          "description": "Inerție sintetică pentru stabilitate",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-32",
+          "name": "Demand Response Aggregation",
+          "description": "Load shifting coordonat",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-36",
+          "name": "Bifacial + Tracker Optimization",
+          "description": "Maximizare albedo din spate",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-37",
+          "name": "Perovskite-Silicon Tandem",
+          "description": "Eficiență celule 34.6%",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "efficiency_percent": 34.6,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-42",
+          "name": "Fast Frequency Response (<1 sec)",
+          "description": "Răspuns sub-secundă la devieri",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "response_time_seconds": 0.8,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-43",
+          "name": "Vehicle-to-Grid Fleet Integration",
+          "description": "Agregare baterii EV pentru grid",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        }
+      ],
+      "tech_stack": {
+        "grid_control": ["OpenPLC", "GridAPPS-D"],
+        "optimization": ["CVXPY", "Pyomo", "Gurobi"],
+        "communication": ["IEC 61850", "IEEE 2030.5"]
+      },
+      "performance_specs": {
+        "vpp_response_time_ms": 92,
+        "frequency_regulation_accuracy_percent": 99.5,
+        "max_power_ramp_rate_mw_per_second": 50
+      }
+    },
+    
+    "MERCURIA": {
+      "id": "mercuria-001",
+      "type": "Trading & Commercial",
+      "description": "Energy trading and revenue optimization",
+      "priority": "P0",
+      "modules_count": 5,
+      "modules": [
+        {
+          "id": "MOD-18",
+          "name": "Real-Time Energy Arbitrage",
+          "description": "Trading automat intraday/day-ahead",
+          "category": "Essential",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P0",
+          "is_primary": true
+        },
+        {
+          "id": "MOD-19",
+          "name": "PPA Corporate Matchmaker",
+          "description": "Contractare rapidă 4.2 ore",
+          "category": "Essential",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "contract_time_hours": 4.2,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-33",
+          "name": "Wholesale Market Bidding AI",
+          "description": "Licitație automată optimizată",
+          "category": "Innovative",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-40",
+          "name": "Cryptocurrency Mining Optimizer",
+          "description": "Mining în surplus/curtailment",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        },
+        {
+          "id": "MOD-44",
+          "name": "Blockchain Energy Trading",
+          "description": "P2P Trading descentralizat",
+          "category": "Future",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P4"
+        }
+      ],
+      "tech_stack": {
+        "trading": ["OPCOM API", "Market data feeds"],
+        "blockchain": ["Ethereum", "Hyperledger Fabric"],
+        "ai": ["Reinforcement Learning", "Deep Q-Networks"]
+      },
+      "market_integrations": {
+        "romania": {
+          "spot_market": "OPCOM",
+          "day_ahead": "PZU",
+          "intraday": "PZI",
+          "balancing": "PTE"
+        }
+      }
+    },
+    
+    "SolarAI": {
+      "id": "solarai-001",
+      "type": "Design & Planning",
+      "description": "System design and optimization",
+      "priority": "P1",
+      "modules_count": 3,
+      "modules": [
+        {
+          "id": "MOD-20",
+          "name": "Agrivoltaic Optimizer",
+          "description": "Dual land-use optimization solar+agri",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P2",
+          "is_primary": true
+        },
+        {
+          "id": "MOD-27",
+          "name": "Solar Spectrum Optimizer",
+          "description": "Adaptare la spectru local",
+          "category": "Advanced",
+          "apis_required": 0,
+          "revenue_10yr_eur": 14200000,
+          "implementation_priority": "P2"
+        },
+        {
+          "id": "MOD-39",
+          "name": "Hyperspectral Diagnostics",
+          "description": "Analiză spectrală probleme materiale",
+          "category": "Innovative",
+          "apis_required": 1,
+          "revenue_10yr_eur": null,
+          "implementation_priority": "P3"
+        }
+      ],
+      "tech_stack": {
+        "design": ["PVsyst", "SAM", "Helioscope"],
+        "gis": ["QGIS", "ArcGIS API", "Google Earth Engine"],
+        "simulation": ["MATLAB", "Python SciPy"]
+      }
+    },
+    
+    "Helio": {
+      "id": "helio-001",
+      "type": "Technical Expert",
+      "description": "Deep technical diagnostics and ESG",
+      "priority": "P1",
+      "modules_count": 2,
+      "modules": [
+        {
+          "id": "MOD-14",
+          "name": "Carbon Footprint & ESG Reporting",
+          "description": "Raportare automată GRI/SASB",
+          "category": "Essential",
+          "apis_required": 0,
+          "revenue_10yr_eur": null,
+          "compliance_standards": ["GRI", "SASB"],
+          "implementation_priority": "P1"
+        },
+        {
+          "id": "MOD-15",
+          "name": "Biodiversity Monitoring",
+          "description": "Tracking Dropia și sănătate vegetală",
+          "category": "Essential",
+          "apis_required": 1,
+          "revenue_10yr_eur": null,
+          "protected_species": ["Dropia"],
+          "implementation_priority": "P2"
+        }
+      ],
+      "tech_stack": {
+        "thermal": ["FLIR SDK", "OpenCV"],
+        "acoustic": ["PyAudio", "Librosa"],
+        "hyperspectral": ["Spectral Python", "ENVI"]
+      }
+    }
+  },
+  
+  "module_categories": {
+    "Critical": {
+      "count": 9,
+      "priority": "P0",
+      "total_revenue_10yr_eur": 193000000
+    },
+    "Essential": {
+      "count": 9,
+      "priority": "P1",
+      "total_revenue_10yr_eur": 0
+    },
+    "Advanced": {
+      "count": 8,
+      "priority": "P2",
+      "total_revenue_10yr_eur": 50400000
+    },
+    "Innovative": {
+      "count": 11,
+      "priority": "P2-P3",
+      "total_revenue_10yr_eur": 0
+    },
+    "Future": {
+      "count": 10,
+      "priority": "P3-P4",
+      "total_revenue_10yr_eur": 0
+    }
+  },
+  
+  "implementation_roadmap": {
+    "phase_1": {
+      "name": "Critical Foundation",
+      "duration_weeks": 2,
+      "modules": ["MOD-01", "MOD-02", "MOD-05", "MOD-06", "MOD-18"],
+      "agents": ["Atlas", "FusionSolar", "OMNI-SCADA", "VOLTA", "MERCURIA"]
+    },
+    "phase_2": {
+      "name": "Essential Operations",
+      "duration_weeks": 3,
+      "modules": ["MOD-09", "MOD-10", "MOD-11", "MOD-12", "MOD-19"],
+      "agents": ["All"]
+    },
+    "phase_3": {
+      "name": "Advanced Features",
+      "duration_weeks": 4,
+      "modules": ["MOD-03", "MOD-04", "MOD-20", "MOD-21", "MOD-22"],
+      "agents": ["All"]
+    },
+    "phase_4": {
+      "name": "Complete System",
+      "duration_weeks": 6,
+      "modules": ["All remaining modules"],
+      "agents": ["All"]
+    }
+  },
+  
+  "api_integrations_summary": {
+    "weather": ["OpenWeatherMap", "MeteoBlue", "Copernicus"],
+    "satellite": ["Planet Labs", "Sentinel-2", "Landsat"],
+    "scada": ["Modbus TCP", "IEC 61850", "DNP3"],
+    "trading": ["OPCOM", "Market Data Providers"],
+    "ai": ["Gemini API", "TensorFlow Serving"]
+  },
+  
+  "gps_validation_rules": {
+    "latitude_range": [-90, 90],
+    "longitude_range": [-180, 180],
+    "minimum_precision_decimal_places": 4,
+    "maximum_search_radius_km": 1,
+    "required_fields": ["latitude", "longitude"]
+  },
+  
+  "response_time_targets": {
+    "gps_to_plant_lookup_ms": 50,
+    "module_routing_ms": 10,
+    "simple_agent_response_ms": 500,
+    "complex_agent_response_ms": 2000,
+    "multi_agent_orchestration_ms": 5000
+  },
+  
+  "revenue_projections": {
+    "total_10yr_eur": 243200000,
+    "by_agent": {
+      "VOLTA": 118000000,
+      "OMNI-SCADA": 59200000,
+      "FusionSolar": 0,
+      "MERCURIA": 0,
+      "SolarAI": 14200000,
+      "Helio": 0,
+      "Atlas": 0
+    },
+    "top_modules": [
+      {"id": "MOD-09", "revenue_eur": 71000000},
+      {"id": "MOD-02", "revenue_eur": 52000000},
+      {"id": "MOD-01", "revenue_eur": 47000000},
+      {"id": "MOD-28", "revenue_eur": 36200000},
+      {"id": "MOD-05", "revenue_eur": 23000000}
+    ]
+  }
+}
