@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { modules } from "../data/modules";
 import { solarMonitoringDocs, hg907Docs, omniScadaDocs, voltaDocs, mercuriaDocs } from "../data/knowledgeBase";
@@ -130,5 +131,35 @@ export const analyzeModuleAction = async (moduleTitle: string, action: string) =
     return response.text;
   } catch (e) {
     return "Unable to perform deep analysis at this time.";
+  }
+};
+
+export const findSolarParkLocation = async (query: string) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  try {
+    // Use gemini-3-flash-preview with googleSearch for up-to-date info
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Find the exact GPS coordinates and a brief visual description for the solar park: "${query}". 
+      If you find it, return a JSON object ONLY with the following structure:
+      {
+        "found": true,
+        "lat": number,
+        "lon": number,
+        "name": string,
+        "description": "visual description for image generation (terrain, layout, surroundings)"
+      }
+      If not found, return { "found": false }. Do not add markdown formatting.`,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json"
+      }
+    });
+    
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Search Error:", e);
+    return { found: false };
   }
 };

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Search, Filter, Layers } from 'lucide-react';
+import { Search, Filter, Layers, Wifi, WifiOff } from 'lucide-react';
 import { modules } from '../data/modules';
 import { Priority, Module, ModuleCategory } from '../types';
 import { ModuleCard } from './ModuleCard';
@@ -24,19 +25,36 @@ export const ModulesInventory: React.FC = () => {
     return matchesSearch && matchesPriority && matchesCategory;
   });
 
+  const activeApiCount = modules.filter(m => m.apis.length > 0).length;
+
   return (
     <div className="h-full overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Filters */}
       <div className="flex flex-col space-y-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800 backdrop-blur-sm sticky top-0 z-20">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search 47 intelligence modules..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 transition-all text-sm shadow-inner"
-          />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search 47 intelligence modules..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 transition-all text-sm shadow-inner"
+            />
+          </div>
+          
+          {/* Status Legend */}
+          <div className="flex items-center gap-4 bg-slate-950 px-4 rounded-xl border border-slate-800 shrink-0 py-2 md:py-0">
+             <div className="flex items-center gap-2 text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="text-slate-300 font-medium">Live API ({activeApiCount})</span>
+             </div>
+             <div className="w-px h-4 bg-slate-800"></div>
+             <div className="flex items-center gap-2 text-xs">
+                <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+                <span className="text-slate-500 font-medium">Simulation ({modules.length - activeApiCount})</span>
+             </div>
+          </div>
         </div>
         
         <div className="space-y-4">

@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { LayoutDashboard, Server, Activity, Settings, Sun, Bot, FileText, Cpu, Zap, TrendingUp, X, CloudSun } from 'lucide-react';
+import { LayoutDashboard, Server, Activity, Settings, Sun, Bot, FileText, Cpu, Zap, TrendingUp, X, CloudSun, Sparkles } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -12,6 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'modules', label: 'Modules Inventory', icon: Server },
+    { id: 'ai-workbench', label: 'AI Workbench', icon: Sparkles },
     { id: 'fusionsolar', label: 'FusionSolar Live', icon: Sun },
     { id: 'weather', label: 'Weather Forecast', icon: CloudSun },
     { id: 'omni-scada', label: 'OMNI-SCADA', icon: Activity },

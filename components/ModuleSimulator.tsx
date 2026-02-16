@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Terminal, Zap, CheckCircle, AlertTriangle, RefreshCcw, Server, Activity, ArrowRight, Wifi, Shield, TrendingUp, History, Radio, Code, Lock, MapPin, Scan, Flame, Crosshair, Satellite, Droplets, Coins, Layers } from 'lucide-react';
+import { Play, Terminal, Zap, CheckCircle, AlertTriangle, RefreshCcw, Server, Activity, ArrowRight, Wifi, Shield, TrendingUp, History, Radio, Code, Lock, MapPin, Scan, Flame, Crosshair, Satellite, Droplets, Coins, Layers, Brain, Search, Database } from 'lucide-react';
 import { Module } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LineChart, Line, Legend } from 'recharts';
 
 interface ModuleSimulatorProps {
   module: Module;
+  customLocation?: { name: string, lat: number, lon: number } | null;
 }
 
 interface TestResult {
@@ -15,7 +17,7 @@ interface TestResult {
   latency?: string;
 }
 
-export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
+export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module, customLocation }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
@@ -26,8 +28,16 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
   const [gridFreq, setGridFreq] = useState(50.00);
   const [powerOutput, setPowerOutput] = useState(0.0);
 
-  // MOD-02 SATU MARE SPECIFIC STATE
-  const [satuMareState, setSatuMareState] = useState({
+  // DYNAMIC LOCATION DERIVED STATE
+  const locationName = customLocation ? customLocation.name : "Satu Mare";
+  const locationId = customLocation 
+    ? `PV_${customLocation.name.toUpperCase().replace(/[^A-Z0-9]/g, '_').substring(0, 15)}_01`
+    : "PV_SATU_MARE_01";
+  const displayLat = customLocation ? customLocation.lat : 47.7900;
+  const displayLon = customLocation ? customLocation.lon : 22.8800;
+
+  // MOD-02 FREQUENCY REGULATION STATE
+  const [frequencyState, setFrequencyState] = useState({
     freq: 50.00,
     power: 12.4, // Base load MW
     setpoint: 12.4,
@@ -35,7 +45,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
     heartbeat: 0, // ms since last beat
     safetyLock: false
   });
-  const [satuMareChart, setSatuMareChart] = useState<any[]>([]);
+  const [frequencyChart, setFrequencyChart] = useState<any[]>([]);
 
   // MOD-03 THERMAL STATE
   const [thermalMatrix, setThermalMatrix] = useState<number[]>(Array(64).fill(25)); // 8x8 grid, base 25C
@@ -50,6 +60,16 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
     roiDays: 0
   });
   const [spectralChart, setSpectralChart] = useState<any[]>([]);
+
+  // MOD-05 AI ANOMALY STATE
+  const [aiAnomalyData, setAiAnomalyData] = useState({
+    expected: 0,
+    actual: 0,
+    delta: 0,
+    confidence: 0,
+    status: 'CALIBRATING'
+  });
+  const [aiAnomalyChart, setAiAnomalyChart] = useState<any[]>([]);
   
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -167,33 +187,45 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
     setIsRunning(false);
   };
 
-  // --- MOD-02: SATU MARE IMPLEMENTATION LOGIC ---
-  const runSatuMareSequence = async () => {
+  // --- MOD-02: FREQUENCY REGULATION (Dynamic Location) ---
+  const runFrequencyRegulationSequence = async () => {
     setIsRunning(true);
     setLogs([]);
     setResults([]);
-    setSatuMareChart([]);
-    setSatuMareState(prev => ({...prev, status: 'HANDSHAKE', freq: 50.00, power: 12.4}));
+    setProgress(0);
+    setFrequencyChart([]);
+    setFrequencyState(prev => ({...prev, status: 'HANDSHAKE', freq: 50.00, power: 12.4}));
 
     // 1. ASSET TWIN CONFIG
     setActiveSuite('1. Asset Digital Twin Configuration');
-    addLog('ATLAS: Loading configuration for PV_SATU_MARE_01...', 'info');
+    addLog(`ATLAS: Loading configuration for ${locationId}...`, 'info');
     await new Promise(r => setTimeout(r, 800));
-    addLog('TWIN: Location 47.7900N, 22.8800E verified.', 'success');
+    addLog(`TWIN: Location ${displayLat.toFixed(4)}N, ${displayLon.toFixed(4)}E verified.`, 'success');
     addLog('TWIN: Capacity 15.5 MW | Connection 110kV confirmed.', 'success');
-    setResults(prev => [...prev, { suite: 'Asset Config', test: 'Digital Twin Init', status: 'PASS', value: 'PV_SATU_MARE_01' }]);
+    setResults(prev => [...prev, { suite: 'Asset Config', test: 'Digital Twin Init', status: 'PASS', value: locationId }]);
+    setProgress(10);
 
-    // 2. HANDSHAKE
-    setActiveSuite('2. API Handshake (IEC-60870-5-104)');
-    addLog('ATLAS: Initiating secure handshake with SM_RTU_01...', 'info');
+    // 2. GRID MONITOR (MQTT) HANDSHAKE
+    setActiveSuite('2. Grid Monitor Integration (MQTT)');
+    addLog('ATLAS: Connecting to Grid Monitor via MQTT (broker.grid-monitor.ro)...', 'info');
+    await new Promise(r => setTimeout(r, 500));
+    addLog('MQTT: Topic [grid/ro/satu_mare/freq] subscribed.', 'success');
+    addLog('MQTT: Data Stream Active (50Hz telemetry @ 10ms).', 'success');
+    setResults(prev => [...prev, { suite: 'Connectivity', test: 'Grid Monitor (MQTT)', status: 'PASS', latency: '9ms' }]);
+    setProgress(20);
+
+    // 3. API HANDSHAKE
+    setActiveSuite('3. Control API Handshake (IEC-60870-5-104)');
+    addLog(`ATLAS: Initiating secure handshake with ${locationId.substring(0,8)}_RTU...`, 'info');
     await new Promise(r => setTimeout(r, 500));
     addLog('NET: POST /api/v1/fr-as/handshake -> 200 OK', 'success');
     addLog('NET: Latency check: 12ms (Excellent)', 'success');
-    setSatuMareState(prev => ({...prev, status: 'REGULATING'}));
-    setResults(prev => [...prev, { suite: 'Connectivity', test: 'API Handshake', status: 'PASS', latency: '12ms' }]);
+    setFrequencyState(prev => ({...prev, status: 'REGULATING'}));
+    setResults(prev => [...prev, { suite: 'Connectivity', test: 'API Handshake (IEC-104)', status: 'PASS', latency: '12ms' }]);
+    setProgress(30);
 
-    // 3. LIVE REGULATION SIMULATION LOOP
-    setActiveSuite('3. Live Frequency Regulation (Droop 4%)');
+    // 4. LIVE REGULATION SIMULATION LOOP
+    setActiveSuite('4. Live Frequency Regulation (Droop 4%)');
     addLog('CTRL: Enabling autonomous Droop Control loop...', 'info');
     
     const iterations = 40;
@@ -225,7 +257,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
         // Heartbeat simulation
         const heartbeat = Math.random() * 500 + 50; // Random heartbeat latency
         
-        setSatuMareState(prev => ({
+        setFrequencyState(prev => ({
             ...prev, 
             freq: currentFreq, 
             power: newPower, 
@@ -233,7 +265,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
             safetyLock: heartbeat > 5000 // Trigger safety if > 5s
         }));
 
-        setSatuMareChart(prev => [...prev, { 
+        setFrequencyChart(prev => [...prev, { 
             time: i, 
             freq: currentFreq, 
             power: newPower, 
@@ -245,14 +277,27 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
         if (i === 26) addLog('GRID: Over-freq (50.08Hz). Curtailing power...', 'warning');
 
         await new Promise(r => setTimeout(r, 250)); // Fast loop
+        setProgress(30 + (i/iterations)*40);
     }
 
     setResults(prev => [...prev, { suite: 'FR-AS Logic', test: 'Droop Response', status: 'PASS', value: '4% Slope' }]);
     setResults(prev => [...prev, { suite: 'Safety', test: 'Heartbeat Watchdog', status: 'PASS', value: 'Active' }]);
+    setProgress(70);
+
+    // 5. ECONOMIC VALIDATION
+    setActiveSuite('5. Financial Impact Analysis');
+    addLog('FIN: Aggregating Ancillary Service credits...', 'info');
+    await new Promise(r => setTimeout(r, 600));
+    addLog('FIN: Validating against $18.26B Ancillary Market Model...', 'info');
+    addLog('FIN: Projected Annual Revenue: $10.2M (Exceeds $10M target)', 'success');
+    addLog('FIN: NPV Calculation: €52.1M (Exceeds €52M target)', 'success');
+    setResults(prev => [...prev, { suite: 'Economics', test: 'Revenue Target ($10M)', status: 'PASS', value: '$10.2M' }]);
+    setResults(prev => [...prev, { suite: 'Economics', test: 'NPV Target (€52M)', status: 'PASS', value: '€52.1M' }]);
+    setProgress(100);
 
     addLog('ATLAS: Simulation complete. Asset returned to baseline.', 'success');
     setIsRunning(false);
-    setSatuMareState(prev => ({...prev, status: 'IDLE', freq: 50.00, power: 12.4}));
+    setFrequencyState(prev => ({...prev, status: 'IDLE', freq: 50.00, power: 12.4}));
   };
 
   // --- MOD-03: THERMAL ANOMALY DETECTION (SATU MARE) ---
@@ -402,18 +447,238 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
     setIsRunning(false);
   };
 
+  // --- MOD-05: AI PRODUCTION ANOMALY ---
+  const runAIAnomalySequence = async () => {
+    setIsRunning(true);
+    setLogs([]);
+    setResults([]);
+    setAiAnomalyChart([]);
+    setAiAnomalyData({ expected: 0, actual: 0, delta: 0, confidence: 0, status: 'INIT' });
+
+    // 1. DATA INGESTION
+    setActiveSuite('1. Data Ingestion (SCADA + GHI)');
+    addLog('ATLAS: Initiating TensorFlow Inference Engine...', 'info');
+    await new Promise(r => setTimeout(r, 500));
+    addLog('DATA: Pulling live SCADA stream from OMNI-SCADA...', 'info');
+    addLog('DATA: Fetching GHI/DNI from FusionSolar/OpenWeather...', 'info');
+    setResults(prev => [...prev, { suite: 'Ingestion', test: 'Multi-Source Sync', status: 'PASS' }]);
+
+    // 2. INFERENCE SIMULATION
+    setActiveSuite('2. Inference Loop (TF-SOLAR-V3)');
+    addLog('MODEL: Loading weights for TF-SOLAR-V3...', 'info');
+    await new Promise(r => setTimeout(r, 800));
+    addLog('MODEL: Model loaded. Starting real-time comparison...', 'success');
+
+    const steps = 30;
+    for (let i = 0; i <= steps; i++) {
+        // Create synthetic curves
+        // Expected: smooth sine curve (irradiance based)
+        const expected = Math.max(0, Math.sin((i/steps) * Math.PI) * 15.5);
+        
+        // Actual: closely follows expected but has noise
+        let actual = expected * (0.98 + (Math.random() * 0.04 - 0.02)); 
+
+        // Inject Anomaly at step 20 (String Failure)
+        if (i >= 20) {
+            actual = expected * 0.85; // 15% drop
+        }
+
+        const delta = ((expected - actual) / (expected || 1)) * 100;
+        const confidence = 92 + Math.random() * 5;
+
+        setAiAnomalyData({
+            expected,
+            actual,
+            delta,
+            confidence,
+            status: delta > 10 ? 'ANOMALY' : 'NOMINAL'
+        });
+
+        setAiAnomalyChart(prev => [...prev, {
+            time: i,
+            expected,
+            actual,
+            threshold: expected * 0.9 // 10% threshold line
+        }]);
+
+        if (i === 20) {
+            addLog('MODEL: Anomaly Detected! Deviation > 10%.', 'error');
+            addLog('DIAG: Pattern match "String Inverter Failure" (Confidence: 94.2%)', 'warning');
+        }
+
+        await new Promise(r => setTimeout(r, 100));
+        setProgress((i / steps) * 100);
+    }
+
+    setResults(prev => [...prev, { suite: 'Inference', test: 'Anomaly Detection', status: 'PASS', value: 'Found (String Fail)' }]);
+    setResults(prev => [...prev, { suite: 'Performance', test: 'Accuracy Target (94.7%)', status: 'PASS', value: '96.2%' }]);
+
+    addLog('ATLAS: Analysis Complete. Ticket #AI-992 Created.', 'success');
+    setIsRunning(false);
+  };
+
   const isMod01 = module.id === 'm1';
   const isMod02 = module.id === 'm2'; // Satu Mare FR-AS
   const isMod03 = module.id === 'm3'; // Satu Mare Thermal
   const isMod04 = module.id === 'm4'; // Satu Mare Soiling
+  const isMod05 = module.id === 'm5'; // AI Anomaly
 
-  if (!isMod01 && !isMod02 && !isMod03 && !isMod04) {
+  if (!isMod01 && !isMod02 && !isMod03 && !isMod04 && !isMod05) {
     return (
       <div className="p-12 text-center text-slate-500 border border-dashed border-slate-700 rounded-3xl bg-slate-900/50">
         <Terminal className="w-16 h-16 mx-auto mb-6 opacity-20" />
         <h3 className="text-white font-bold mb-2">Sandbox Unavailable</h3>
-        <p className="text-sm max-w-xs mx-auto">This simulator is currently optimized for MOD-01, MOD-02, MOD-03, and MOD-04 technical verification.</p>
+        <p className="text-sm max-w-xs mx-auto">This simulator is currently optimized for MOD-01 to MOD-05 technical verification.</p>
       </div>
+    );
+  }
+
+  // --- RENDER MOD-05 (AI ANOMALY) VIEW ---
+  if (isMod05) {
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500 pb-12 font-mono">
+            {/* AI HEADER */}
+            <div className="bg-[#0f0a1a] border border-indigo-900/50 rounded-3xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <Brain className="w-32 h-32 text-indigo-500" />
+                </div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded uppercase tracking-widest">TENSORFLOW CORE</span>
+                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Server className="w-3 h-3" /> TF-SOLAR-V3 MODEL</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-white tracking-tight">AI Production Anomaly Detection</h3>
+                        <p className="text-xs text-slate-500 mt-1">Accuracy Target: <span className="text-indigo-400">94.7%</span></p>
+                    </div>
+                    
+                    {!isRunning ? (
+                        <button 
+                            onClick={runAIAnomalySequence}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-900/20"
+                        >
+                            <Play className="w-4 h-4" /> Run Verification
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] text-slate-500 uppercase font-bold">Confidence</span>
+                                <span className={`text-xs font-mono text-indigo-400`}>{aiAnomalyData.confidence.toFixed(1)}%</span>
+                            </div>
+                            <Activity className="w-8 h-8 text-indigo-500 animate-pulse" />
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* THREE COLUMN GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* COL 1: CONFIG JSON */}
+                <div className="bg-[#050505] border border-slate-800 rounded-2xl p-4 flex flex-col h-[360px]">
+                    <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
+                        <Code className="w-4 h-4 text-slate-500" />
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Model Architecture</span>
+                    </div>
+                    <pre className="flex-1 overflow-y-auto custom-scrollbar text-[9px] text-slate-400 leading-relaxed font-mono">
+{`{
+  "model_id": "TF-SOLAR-V3",
+  "type": "LSTM Autoencoder",
+  "inputs": [
+    "GHI (W/m2)",
+    "Module_Temp (C)", 
+    "Active_Power (kW)",
+    "String_Current (A)"
+  ],
+  "training_window": "30d",
+  "threshold_dynamic": true,
+  "precision_target": 0.947
+}`}
+                    </pre>
+                </div>
+
+                {/* COL 2: INFERENCE CHART */}
+                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col h-[360px]">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Live Inference Stream</span>
+                        <div className={`text-[9px] px-2 py-1 rounded font-bold uppercase ${aiAnomalyData.delta > 10 ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                            Status: {aiAnomalyData.status}
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 w-full relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={aiAnomalyChart}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <XAxis hide />
+                                <YAxis hide />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', fontSize: '10px' }}
+                                />
+                                <Line type="monotone" dataKey="expected" stroke="#10b981" strokeWidth={2} dot={false} name="Expected (AI)" />
+                                <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} dot={false} name="Actual (SCADA)" />
+                                <ReferenceLine y={aiAnomalyData.expected * 0.85} label="Threshold" stroke="red" strokeDasharray="3 3" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                        <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                            <p className="text-[8px] text-slate-500 uppercase font-bold">Deviation</p>
+                            <p className={`text-xl font-bold ${aiAnomalyData.delta > 10 ? 'text-red-500' : 'text-white'}`}>
+                                {aiAnomalyData.delta.toFixed(1)}%
+                            </p>
+                        </div>
+                        <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                            <p className="text-[8px] text-slate-500 uppercase font-bold">Accuracy</p>
+                            <p className="text-xl font-bold text-white">96.2%</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* COL 3: LOGS */}
+                <div className="bg-black border border-slate-800 rounded-2xl p-4 flex flex-col h-[360px]">
+                    <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
+                        <Terminal className="w-4 h-4 text-slate-500" />
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Inference Logs</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5">
+                        {logs.map((log, i) => (
+                            <div key={i} className={`text-[10px] leading-tight ${
+                                log.includes('ERROR') ? 'text-red-400' : 
+                                log.includes('SUCCESS') ? 'text-emerald-400' : 
+                                log.includes('WARNING') ? 'text-amber-400' : 
+                                'text-slate-400'
+                            }`}>
+                                {log}
+                            </div>
+                        ))}
+                        <div ref={logsEndRef} />
+                    </div>
+                </div>
+            </div>
+
+            {/* RESULTS */}
+            {progress === 100 && !isRunning && (
+                <div className="bg-[#0f0a1a] border border-indigo-900/30 rounded-2xl p-6 animate-in slide-in-from-bottom-4">
+                    <h4 className="text-indigo-400 text-sm font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Shield className="w-4 h-4" /> Validation Complete
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {results.map((res, i) => (
+                            <div key={i} className="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-[8px] text-slate-500 uppercase font-bold">{res.suite}</span>
+                                    {res.status === 'PASS' ? <CheckCircle className="w-3 h-3 text-emerald-500" /> : <AlertTriangle className="w-3 h-3 text-red-500" />}
+                                </div>
+                                <div className="text-xs text-white font-bold truncate">{res.test}</div>
+                                {res.value && <div className="text-[10px] text-indigo-400 mt-1 font-mono">{res.value}</div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
     );
   }
 
@@ -430,7 +695,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <span className="px-2 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold rounded uppercase tracking-widest">PLANET LABS</span>
-                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Satellite className="w-3 h-3" /> SATU MARE TARGET</span>
+                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Satellite className="w-3 h-3" /> {locationName.toUpperCase()} TARGET</span>
                         </div>
                         <h3 className="text-xl font-bold text-white tracking-tight">Satellite Soiling Analysis</h3>
                         <p className="text-xs text-slate-500 mt-1">Resolution: 3m/px | Sensor: <span className="text-cyan-400">PlanetScope (Dove)</span></p>
@@ -481,7 +746,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                         )}
                         
                         <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-[8px] text-white font-mono">
-                            Lat: 47.792 | Lon: 22.885
+                            Lat: {displayLat.toFixed(3)} | Lon: {displayLon.toFixed(3)}
                         </div>
                     </div>
                 </div>
@@ -590,10 +855,10 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <span className="px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-bold rounded uppercase tracking-widest">TAD-V4 ENGINE</span>
-                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Crosshair className="w-3 h-3" /> SATU MARE TARGET</span>
+                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Crosshair className="w-3 h-3" /> {locationName.toUpperCase()} TARGET</span>
                         </div>
                         <h3 className="text-xl font-bold text-white tracking-tight">Thermal Anomaly Detection</h3>
-                        <p className="text-xs text-slate-500 mt-1">Protocol: <span className="text-red-400">SAFE-THERM-RO</span> | Asset: SM-PARK-001</p>
+                        <p className="text-xs text-slate-500 mt-1">Protocol: <span className="text-red-400">SAFE-THERM-RO</span> | Asset: {locationId}</p>
                     </div>
                     
                     {!isRunning ? (
@@ -627,13 +892,13 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                     <pre className="flex-1 overflow-y-auto custom-scrollbar text-[9px] text-slate-400 leading-relaxed font-mono">
 {`{
   "target_metadata": {
-    "location": "Parcul Central",
-    "region": "Satu Mare",
-    "id": "SM-PARK-001"
+    "location": "${locationName}",
+    "region": "Romania",
+    "id": "${locationId}"
   },
   "geospatial_config": {
     "type": "Polygon",
-    "coords": [[22.8725, 47.7920]...],
+    "coords": [[${displayLon}, ${displayLat}]...],
     "buffer_m": 50
   },
   "safety_protocols": {
@@ -739,15 +1004,15 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded uppercase tracking-widest">ATLAS ENGINE</span>
-                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Wifi className="w-3 h-3" /> IEC-60870-5-104</span>
+                            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-widest"><Wifi className="w-3 h-3" /> IEC-60870-5-104 & MQTT</span>
                         </div>
-                        <h3 className="text-xl font-bold text-white tracking-tight">FR-AS: Satu Mare Integration</h3>
-                        <p className="text-xs text-slate-500 mt-1">Target Asset: <span className="text-emerald-400">PV_SATU_MARE_01</span></p>
+                        <h3 className="text-xl font-bold text-white tracking-tight">FR-AS: {locationName} Integration (MOD-02)</h3>
+                        <p className="text-xs text-slate-500 mt-1">Target Asset: <span className="text-emerald-400">{locationId}</span></p>
                     </div>
                     
                     {!isRunning ? (
                         <button 
-                            onClick={runSatuMareSequence}
+                            onClick={runFrequencyRegulationSequence}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20"
                         >
                             <Play className="w-4 h-4" /> Initialize Sequence
@@ -756,7 +1021,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                         <div className="flex items-center gap-3">
                             <div className="flex flex-col items-end">
                                 <span className="text-[10px] text-slate-500 uppercase font-bold">Heartbeat</span>
-                                <span className={`text-xs font-mono ${satuMareState.heartbeat > 1000 ? 'text-red-400' : 'text-emerald-400'}`}>{satuMareState.heartbeat.toFixed(0)}ms</span>
+                                <span className={`text-xs font-mono ${frequencyState.heartbeat > 1000 ? 'text-red-400' : 'text-emerald-400'}`}>{frequencyState.heartbeat.toFixed(0)}ms</span>
                             </div>
                             <Activity className="w-8 h-8 text-emerald-500 animate-pulse" />
                         </div>
@@ -774,10 +1039,10 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                     </div>
                     <pre className="flex-1 overflow-y-auto custom-scrollbar text-[9px] text-slate-400 leading-relaxed font-mono">
 {`{
-  "asset_id": "PV_SATU_MARE_01",
+  "asset_id": "${locationId}",
   "meta": {
-    "name": "Parc Solar Satu Mare Alpha",
-    "location": { "lat": 47.7900, "lon": 22.8800 },
+    "name": "${locationName} Solar Park",
+    "location": { "lat": ${displayLat.toFixed(4)}, "lon": ${displayLon.toFixed(4)} },
     "connection": "110kV",
     "max_export": 15.5
   },
@@ -789,6 +1054,7 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
   },
   "connectivity": {
     "protocol": "IEC-60870-5-104",
+    "monitor_protocol": "MQTT",
     "gateway": "192.168.10.50",
     "port": 2404
   }
@@ -801,21 +1067,21 @@ export const ModuleSimulator: React.FC<ModuleSimulatorProps> = ({ module }) => {
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex flex-col">
                             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Grid Frequency</span>
-                            <span className={`text-2xl font-black ${Math.abs(satuMareState.freq - 50) > 0.05 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {satuMareState.freq.toFixed(3)} Hz
+                            <span className={`text-2xl font-black ${Math.abs(frequencyState.freq - 50) > 0.05 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {frequencyState.freq.toFixed(3)} Hz
                             </span>
                         </div>
                         <div className="flex flex-col text-right">
                             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Active Power</span>
                             <span className="text-xl font-black text-white">
-                                {satuMareState.power.toFixed(2)} MW
+                                {frequencyState.power.toFixed(2)} MW
                             </span>
                         </div>
                     </div>
                     
                     <div className="flex-1 w-full bg-slate-950/50 rounded-lg overflow-hidden relative">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={satuMareChart}>
+                            <AreaChart data={frequencyChart}>
                                 <defs>
                                     <linearGradient id="powerGrad" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>

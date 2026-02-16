@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
@@ -12,6 +13,7 @@ import { SettingsSection } from './components/SettingsSection';
 import { WeatherForecast } from './components/WeatherForecast';
 import { FusionSolarDashboard } from './components/FusionSolarDashboard';
 import { GlobalCommandPalette } from './components/GlobalCommandPalette';
+import { AIImageWorkbench } from './components/AIImageWorkbench';
 import { Menu, Sun, Bell, User as UserIcon, Command } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -34,6 +36,7 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
       case 'modules': return <ModulesInventory />;
+      case 'ai-workbench': return <AIImageWorkbench />;
       case 'omni-scada': return <OmniScadaSection />;
       case 'volta': return <VoltaSection />;
       case 'mercuria': return <MercuriaSection />;
