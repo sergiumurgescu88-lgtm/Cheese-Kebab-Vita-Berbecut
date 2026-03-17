@@ -1,13 +1,96 @@
-import React, { useState } from 'react';
-import { Settings, Shield, Bell, Globe, Key, Save, Moon, Cpu, Database } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, Shield, Bell, Globe, Key, Save, Moon, Cpu, Database, ExternalLink, CreditCard, AlertTriangle } from 'lucide-react';
+
+declare global {
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}
 
 export const SettingsSection: React.FC = () => {
   const [apiKey, setApiKey] = useState('••••••••••••••••••••••••••••');
   const [showKey, setShowKey] = useState(false);
+  const [hasPaidKey, setHasPaidKey] = useState(false);
+  const activeProjectId = "588412172690";
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasPaidKey(selected);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleSelectKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      const selected = await window.aistudio.hasSelectedApiKey();
+      setHasPaidKey(selected);
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 custom-scrollbar">
       <div className="max-w-3xl space-y-8">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/20">
+            <div className="flex items-center gap-3">
+              <CreditCard className="w-5 h-5 text-emerald-500" />
+              <h3 className="font-bold text-white uppercase tracking-tight text-sm md:text-base">Billing & API Limits</h3>
+            </div>
+            {hasPaidKey ? (
+              <div className="flex flex-col items-end">
+                <span className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">PAID TIER ACTIVE</span>
+                <span className="text-[9px] text-slate-500 mt-1 font-mono">Project: {activeProjectId}</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-end">
+                <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">FREE TIER (LIMITED)</span>
+                <span className="text-[9px] text-slate-500 mt-1 font-mono">Context: {activeProjectId}</span>
+              </div>
+            )}
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1 space-y-3">
+                <h4 className="text-xs font-bold text-slate-200 uppercase">Cum evităm limitele?</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Pentru a asigura generarea rapoartelor SF fără întreruperi și cu viteză maximă, recomandăm utilizarea unui <strong>API Key dintr-un proiect Google Cloud cu facturare activată</strong>.
+                </p>
+                <div className="flex items-center gap-4 pt-2">
+                  <a 
+                    href="https://ai.google.dev/gemini-api/docs/billing" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-widest transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" /> Documentație Billing
+                  </a>
+                </div>
+              </div>
+              <div className="flex-1 bg-slate-950/50 border border-slate-800 rounded-2xl p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-slate-500 uppercase leading-relaxed">
+                    Fără un Key plătit, poți întâmpina erori de tip "Rate Limit Exceeded" în timpul orelor de vârf sau la procesarea documentelor mari.
+                  </p>
+                </div>
+                <button 
+                  onClick={handleSelectKey}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
+                >
+                  {hasPaidKey ? "Schimbă API Key (Paid)" : "Configurează Paid API Key"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
           <div className="p-6 border-b border-slate-800 flex items-center gap-3 bg-slate-800/20">
             <Key className="w-5 h-5 text-amber-500" />

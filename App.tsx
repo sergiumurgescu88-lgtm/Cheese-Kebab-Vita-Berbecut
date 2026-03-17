@@ -41,7 +41,7 @@ const App: React.FC = () => {
       case 'volta': return <VoltaSection />;
       case 'mercuria': return <MercuriaSection />;
       case 'solar-ai': return <SolarChat />;
-      case 'helio-sf': return <HeliosChat />;
+      case 'helio-sf': return <HeliosChat setActiveTab={setActiveTab} />;
       case 'atlas': return <AtlasChat />;
       case 'settings': return <SettingsSection />;
       case 'weather': return <WeatherForecast />;
@@ -107,8 +107,8 @@ const App: React.FC = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-hidden bg-[#020617]">
-          <div className="max-w-7xl mx-auto h-full w-full">
+        <main className="flex-1 overflow-y-auto bg-[#020617] custom-scrollbar">
+          <div className="h-full w-full">
             {renderContent()}
           </div>
         </main>

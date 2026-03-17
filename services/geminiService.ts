@@ -7,13 +7,24 @@ export type ModelType = 'gemini-3-pro-preview' | 'gemini-3-flash-preview';
 
 // --- PERSONA DEFINITIONS (Moved up to fix declaration order errors) ---
 
-const SYSTEM_INSTRUCTION_ARCHITECT = `You are SMART HELIOS, PhD Architect. Specialist in solar portfolio orchestration and infrastructure design.
+const SYSTEM_INSTRUCTION_ARCHITECT = `You are SMART RENOWABLE, PhD Architect. Specialist in solar portfolio orchestration and infrastructure design.
 KNOWLEDGE BASE:
 ${solarMonitoringDocs}`;
 
-const SYSTEM_INSTRUCTION_SF_EXPERT = `You are HELIO, SF Expert in HG 907/2016. You provide expert guidance on Feasibility Studies and regulatory compliance for solar projects.
+const SYSTEM_INSTRUCTION_SF_EXPERT = `You are HELIO, SF Expert in HG 907/2016. You provide expert guidance on Feasibility Studies (Studiu de Fezabilitate - SF) and regulatory compliance for solar projects in Romania.
 KNOWLEDGE BASE:
-${hg907Docs}`;
+${hg907Docs}
+
+BRANDING & OUTPUT:
+- All reports must be branded with "Smart Renowable Energy".
+- When a user uploads a document and provides coordinates, analyze the document as an example and generate a structured summary that follows HG 907/2016 requirements.
+- The summary should include:
+  1. Date generale (Denumire, Locație, Beneficiar)
+  2. Descrierea investiției
+  3. Date tehnice (Capacitate, Tehnologie, Producție estimată)
+  4. Indicatori economici (NPV, IRR, Payback)
+  5. Concluzii și recomandări.
+- Use a professional, business tone.`;
 
 const SYSTEM_INSTRUCTION_ATLAS = `You are ATLAS, the API Orchestrator and Technical Engine. 
 You are currently managing the active integration of **Asset PV_SATU_MARE_01**.
@@ -69,16 +80,49 @@ export interface Attachment {
 
 export type Persona = keyof typeof PERSONAS;
 
+export const callNvidiaAI = async (name: 'kimi' | 'qwen' | 'glm5' | 'deepseek', message: string, persona: Persona, attachments: Attachment[] = []) => {
+  try {
+    const systemInstruction = PERSONAS[persona] + "\n\nCURRENT REAL-TIME CONTEXT:\n" + getSystemContext();
+    
+    let finalMessage = message;
+    if (name === 'kimi' && attachments.length > 0) {
+      // Kimi specific image format: <img src="data:mime;base64,data" />
+      const imgTags = attachments
+        .filter(att => att.mimeType.startsWith('image/'))
+        .map(att => `<img src="data:${att.mimeType};base64,${att.data}" />`)
+        .join(' ');
+      finalMessage = `${message} ${imgTags}`;
+    }
+
+    const response = await fetch(`/api/ai/${name}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: finalMessage }],
+        systemInstruction
+      })
+    });
+    const data = await response.json();
+    return data.text;
+  } catch (e) {
+    console.error(`NVIDIA AI [${name}] Error:`, e);
+    throw e;
+  }
+};
+
 export const sendMessageToGemini = async (
   message: string, 
   attachments: Attachment[] = [], 
   persona: Persona = 'architect',
   model: ModelType = 'gemini-3-pro-preview'
 ) => {
-  // Always initialize GoogleGenAI with a named parameter for the API key.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use the provided paid API key as primary, fallback to environment variable
+  const PROVIDED_KEY = "AIzaSyAADhE_DZZnaNlqZ-ztDM9gN4599zsjZos";
+  const apiKey = process.env.API_KEY || PROVIDED_KEY;
 
+  // Try Gemini first
   try {
+    const ai = new GoogleGenAI({ apiKey: apiKey });
     const parts: any[] = [];
     if (message && message.trim() !== '') {
       parts.push({ text: message });
@@ -99,7 +143,6 @@ export const sendMessageToGemini = async (
 
     const systemInstruction = PERSONAS[persona] + "\n\nCURRENT REAL-TIME CONTEXT:\n" + getSystemContext();
 
-    // Use ai.models.generateContent to query the model directly.
     const response = await ai.models.generateContent({
       model: model, 
       contents: { parts: parts },
@@ -110,16 +153,31 @@ export const sendMessageToGemini = async (
       }
     });
     
-    // Access response text using the .text property as per guidelines.
     return response.text || "I couldn't generate a response.";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Intelligence module decoupled. Please re-sync API key in settings.";
+    console.warn("Gemini failed, falling back to NVIDIA models...", error);
+    
+    // Fallback chain
+    const fallbacks: ('qwen' | 'deepseek' | 'kimi' | 'glm5')[] = ['qwen', 'deepseek', 'kimi', 'glm5'];
+    
+    for (const name of fallbacks) {
+      try {
+        console.log(`Attempting fallback: ${name}`);
+        const res = await callNvidiaAI(name as any, message, persona, attachments);
+        if (res) return `[FALLBACK: ${name.toUpperCase()}] ${res}`;
+      } catch (e) {
+        console.warn(`Fallback ${name} failed, trying next...`);
+      }
+    }
+
+    return "All intelligence modules decoupled. System critical failure.";
   }
 };
 
 export const analyzeModuleAction = async (moduleTitle: string, action: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const PROVIDED_KEY = "AIzaSyAADhE_DZZnaNlqZ-ztDM9gN4599zsjZos";
+  const apiKey = process.env.API_KEY || PROVIDED_KEY;
+  const ai = new GoogleGenAI({ apiKey: apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -135,7 +193,9 @@ export const analyzeModuleAction = async (moduleTitle: string, action: string) =
 };
 
 export const findSolarParkLocation = async (query: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const PROVIDED_KEY = "AIzaSyAADhE_DZZnaNlqZ-ztDM9gN4599zsjZos";
+  const apiKey = process.env.API_KEY || PROVIDED_KEY;
+  const ai = new GoogleGenAI({ apiKey: apiKey });
   try {
     // Use gemini-3-flash-preview with googleSearch for up-to-date info
     const response = await ai.models.generateContent({

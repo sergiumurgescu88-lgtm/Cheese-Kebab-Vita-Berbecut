@@ -18,6 +18,7 @@ export const VoltaSection: React.FC = () => {
   const [showMobileInfo, setShowMobileInfo] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [aiModel, setAiModel] = useState<'gemini' | 'kimi' | 'qwen' | 'glm5' | 'deepseek'>('qwen');
 
   const instruments = [
     { title: "PoC Measurement", icon: Anchor, desc: "Source of Truth at Connection Point" },
@@ -73,7 +74,15 @@ export const VoltaSection: React.FC = () => {
     try {
       const atts: Attachment[] = [];
       if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
-      const responseText = await sendMessageToGemini(currentInput, atts, 'volta');
+      
+      let responseText;
+      if (aiModel === 'gemini') {
+        responseText = await sendMessageToGemini(currentInput, atts, 'volta');
+      } else {
+        const { callNvidiaAI } = await import('../services/geminiService');
+        responseText = await callNvidiaAI(aiModel, currentInput, 'volta', atts);
+      }
+      
       setMessages(prev => [...prev, { role: 'assistant', text: responseText, timestamp: new Date() }]);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
@@ -89,7 +98,15 @@ export const VoltaSection: React.FC = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setMessages(prev => [...prev, { role: 'user', text: "🎤 Controller Command Log", timestamp: new Date(), attachments: [{ type: 'audio' }] }]);
         const base64 = await fileToBase64(audioBlob);
-        const res = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'volta');
+        
+        let res;
+        if (aiModel === 'gemini') {
+          res = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'volta');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          res = await callNvidiaAI(aiModel, "Audio processed (text context only)", 'volta', [{ mimeType: audioBlob.type, data: base64 }]);
+        }
+        
         setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date() }]);
         setIsLoading(false);
         stream.getTracks().forEach(t => t.stop());
@@ -110,6 +127,17 @@ export const VoltaSection: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            <select 
+              value={aiModel} 
+              onChange={(e) => setAiModel(e.target.value as any)}
+              className="bg-amber-950 border border-amber-800 text-amber-300 text-[10px] rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500 font-mono"
+            >
+              <option value="gemini">Gemini 3 Pro</option>
+              <option value="deepseek">DeepSeek V3.2</option>
+              <option value="qwen">Qwen 3.5 397B</option>
+              <option value="kimi">Kimi K2.5</option>
+              <option value="glm5">GLM-5 Thinking</option>
+            </select>
             <button onClick={() => setShowMobileInfo(!showMobileInfo)} className="xl:hidden p-2 hover:bg-amber-900/30 rounded-lg text-amber-500">{showMobileInfo ? <X className="w-4 h-4" /> : <Info className="w-4 h-4" />}</button>
             <button onClick={() => setMessages([{ role: 'assistant', text: "VOLTA logs cleared.", timestamp: new Date() }])} className="p-2 hover:bg-amber-900/30 rounded-lg text-amber-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
           </div>

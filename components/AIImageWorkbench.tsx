@@ -4,7 +4,7 @@ import { GeminiService } from '../services/ai/gemini.service';
 import { 
   Sparkles, Image as ImageIcon, Wand2, Search, Download, 
   Trash2, RefreshCw, Layers, Maximize, Cpu, Send, Upload,
-  AlertCircle, AspectRatio
+  AlertCircle
 } from 'lucide-react';
 
 export const AIImageWorkbench: React.FC = () => {

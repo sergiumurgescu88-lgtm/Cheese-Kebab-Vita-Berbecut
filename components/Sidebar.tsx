@@ -42,9 +42,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
 
       {/* Sidebar Container */}
       <div className={`
-        fixed top-0 left-0 h-screen w-72 bg-[#020617] border-r border-slate-800 flex flex-col z-[70]
-        transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:translate-x-0 md:w-64
-        ${isOpen ? 'translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)]' : '-translate-x-full'}
+        fixed md:relative top-0 left-0 h-screen md:h-full w-72 md:w-64 bg-[#020617] border-r border-slate-800 flex flex-col z-[70] md:z-10
+        transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:transform-none
+        ${isOpen ? 'translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)]' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="p-6 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
               <Sun className="text-slate-950 w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-white tracking-tighter leading-none">SMART HELIOS</h1>
+              <h1 className="text-lg font-black text-white tracking-tighter leading-none">SMART RENOWABLE</h1>
               <p className="text-[10px] text-slate-500 uppercase font-mono tracking-widest mt-1">v1.0.5 Enterprise</p>
             </div>
           </div>

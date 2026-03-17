@@ -28,7 +28,7 @@ export const SolarChat: React.FC = () => {
     return [
       { 
         role: 'assistant', 
-        text: "Greetings. I am SolarAI, your Technical Architect. I specialize in Romanian and US solar portfolio orchestration. How can I assist with the infrastructure today?", 
+        text: "Greetings. I am Smart Renowable, your Technical Architect. I specialize in Romanian and US solar portfolio orchestration. How can I assist with the infrastructure today?", 
         timestamp: new Date() 
       }
     ];
@@ -38,6 +38,7 @@ export const SolarChat: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [showMobileInfo, setShowMobileInfo] = useState(false);
+  const [aiModel, setAiModel] = useState<'gemini' | 'kimi' | 'qwen' | 'glm5' | 'deepseek'>('qwen');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,10 +66,10 @@ export const SolarChat: React.FC = () => {
   }, [messages]);
 
   const clearHistory = () => {
-    if (window.confirm('Reset SolarAI context?')) {
+    if (window.confirm('Reset Smart Renowable context?')) {
       const initialMsg: Message = { 
         role: 'assistant', 
-        text: "Greetings. I am SolarAI. Context cleared. How shall we begin the new architectural session?", 
+        text: "Greetings. I am Smart Renowable. Context cleared. How shall we begin the new architectural session?", 
         timestamp: new Date() 
       };
       setMessages([initialMsg]);
@@ -129,7 +130,15 @@ export const SolarChat: React.FC = () => {
     try {
         const base64Audio = await fileToBase64(audioBlob);
         const attachment: Attachment = { mimeType: audioBlob.type, data: base64Audio };
-        const responseText = await sendMessageToGemini("", [attachment], 'architect');
+        
+        let responseText;
+        if (aiModel === 'gemini') {
+          responseText = await sendMessageToGemini("", [attachment], 'architect');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          responseText = await callNvidiaAI(aiModel, "Audio processed (text context only)", 'architect', [attachment]);
+        }
+        
         setMessages(prev => [...prev, { role: 'assistant', text: responseText, timestamp: new Date() }]);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
@@ -157,7 +166,15 @@ export const SolarChat: React.FC = () => {
             const base64 = await fileToBase64(currentFile);
             attachments.push({ mimeType: currentFile.type, data: base64 });
         }
-        const responseText = await sendMessageToGemini(currentInput, attachments, 'architect');
+        
+        let responseText;
+        if (aiModel === 'gemini') {
+          responseText = await sendMessageToGemini(currentInput, attachments, 'architect');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          responseText = await callNvidiaAI(aiModel, currentInput, 'architect', attachments);
+        }
+        
         setMessages(prev => [...prev, { role: 'assistant', text: responseText, timestamp: new Date() }]);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
@@ -201,6 +218,17 @@ export const SolarChat: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            <select 
+              value={aiModel} 
+              onChange={(e) => setAiModel(e.target.value as any)}
+              className="bg-indigo-950 border border-indigo-800 text-indigo-300 text-[10px] rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500 font-mono"
+            >
+              <option value="gemini">Gemini 3 Pro</option>
+              <option value="deepseek">DeepSeek V3.2</option>
+              <option value="qwen">Qwen 3.5 397B</option>
+              <option value="kimi">Kimi K2.5</option>
+              <option value="glm5">GLM-5 Thinking</option>
+            </select>
             <button onClick={() => setShowMobileInfo(!showMobileInfo)} className="xl:hidden p-2 hover:bg-indigo-900/30 rounded-lg text-indigo-500">
               {showMobileInfo ? <X className="w-4 h-4" /> : <Info className="w-4 h-4" />}
             </button>

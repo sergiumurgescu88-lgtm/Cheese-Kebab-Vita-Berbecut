@@ -1,5 +1,5 @@
 {
-  "name": "SMART HELIOS Dashboard",
+  "name": "Smart Renowable Energy Dashboard",
   "description": "Comprehensive Solar Energy Management System Dashboard visualizing 47 critical modules, financial impact, and API integrations.",
   "requestFramePermissions": [
     "microphone",

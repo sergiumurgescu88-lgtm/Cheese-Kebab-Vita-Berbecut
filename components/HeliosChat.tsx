@@ -1,18 +1,25 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Terminal, Code, FileText, Paperclip, Mic, X, StopCircle, Image as ImageIcon, File as FileIcon, Trash2, ScrollText, Info, Gavel, FileCheck, Lightbulb, Map, Wind } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Terminal, Code, FileText, Paperclip, Mic, X, StopCircle, Image as ImageIcon, File as FileIcon, Trash2, ScrollText, Info, Gavel, FileCheck, Lightbulb, Map, Wind, Download, MapPin } from 'lucide-react';
 import { sendMessageToGemini, Attachment } from '../services/geminiService';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 interface Message {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
   attachments?: { type: 'image' | 'audio' | 'pdf', url?: string, name?: string }[];
+  isReport?: boolean;
 }
 
 const HISTORY_KEY = 'helio_sf_chat_history';
 
-export const HeliosChat: React.FC = () => {
+interface HeliosChatProps {
+  setActiveTab: (tab: string) => void;
+}
+
+export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(HISTORY_KEY);
     if (saved) {
@@ -21,11 +28,14 @@ export const HeliosChat: React.FC = () => {
         return parsed.map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
       } catch (e) { console.error(e); }
     }
-    return [{ role: 'assistant', text: "Salut. Sunt HELIO, expertul tău în HG 907/2016. Să generăm SF-ul tău de impact astăzi.", timestamp: new Date() }];
+    return [{ role: 'assistant', text: "Salut. Sunt SMART RENOWABLE, expertul tău în HG 907/2016. Să generăm SF-ul tău de impact astăzi.", timestamp: new Date() }];
   });
   const [input, setInput] = useState('');
+  const [lat, setLat] = useState('');
+  const [lon, setLon] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [aiModel, setAiModel] = useState<'gemini' | 'kimi' | 'qwen' | 'glm5' | 'deepseek'>('qwen');
   const [isRecording, setIsRecording] = useState(false);
   const [showMobileInfo, setShowMobileInfo] = useState(false);
   
@@ -38,13 +48,12 @@ export const HeliosChat: React.FC = () => {
   useEffect(() => { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages)); }, [messages]);
 
   const clearHistory = () => {
-    if (window.confirm('Reset HELIO SF session?')) {
-      setMessages([{ role: 'assistant', text: "Salut. Sunt HELIO. Gata pentru un nou studiu de fezabilitate.", timestamp: new Date() }]);
+    if (window.confirm('Reset SMART RENOWABLE SF session?')) {
+      setMessages([{ role: 'assistant', text: "Salut. Sunt SMART RENOWABLE. Gata pentru un nou studiu de fezabilitate.", timestamp: new Date() }]);
       localStorage.removeItem(HISTORY_KEY);
     }
   };
 
-  // Fix: Added missing removeFile function to clear selected files and reset file input
   const removeFile = () => {
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -59,13 +68,55 @@ export const HeliosChat: React.FC = () => {
     });
   };
 
+  const generatePDF = (text: string) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFillColor(10, 32, 32); // Teal Dark
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text('Smart Renowable Energy', 20, 20);
+    doc.setFontSize(10);
+    doc.text('STUDIU DE FEZABILITATE - RAPORT TEHNIC (HG 907/2016)', 20, 30);
+    
+    // Content
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(12);
+    
+    const splitText = doc.splitTextToSize(text, pageWidth - 40);
+    doc.text(splitText, 20, 55);
+    
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Generat de HELIO SF Expert | Pagina ${i} din ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+    }
+    
+    doc.save(`SF_Report_${new Date().getTime()}.pdf`);
+  };
+
   const handleSendAudio = async (audioBlob: Blob) => {
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', text: "🎤 Instrucțiune Audio SF", timestamp: new Date(), attachments: [{ type: 'audio' }] }]);
+    setMessages(prev => [...prev, { role: 'user', text: `🎤 Instrucțiune Audio SF ${lat && lon ? `(Locație: ${lat}, ${lon})` : ''}`, timestamp: new Date(), attachments: [{ type: 'audio' }] }]);
     try {
         const base64 = await fileToBase64(audioBlob);
-        const response = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'sf_expert');
-        setMessages(prev => [...prev, { role: 'assistant', text: response, timestamp: new Date() }]);
+        const contextMsg = lat && lon ? `Locație: Lat ${lat}, Lon ${lon}. ` : "";
+        
+        let response;
+        if (aiModel === 'gemini') {
+          response = await sendMessageToGemini(contextMsg, [{ mimeType: audioBlob.type, data: base64 }], 'sf_expert');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          response = await callNvidiaAI(aiModel, contextMsg || "Audio processed (text context only)", 'sf_expert', [{ mimeType: audioBlob.type, data: base64 }]);
+        }
+        
+        setMessages(prev => [...prev, { role: 'assistant', text: response, timestamp: new Date(), isReport: true }]);
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
@@ -83,19 +134,37 @@ export const HeliosChat: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() && !selectedFile) return;
     const currentInput = input; const currentFile = selectedFile;
+    const currentLat = lat; const currentLon = lon;
+    
     setInput(''); setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     const uiAtts: any[] = [];
     if (currentFile) uiAtts.push({ type: currentFile.type.startsWith('image') ? 'image' : 'pdf', name: currentFile.name, url: currentFile.type.startsWith('image') ? URL.createObjectURL(currentFile) : undefined });
 
-    setMessages(prev => [...prev, { role: 'user', text: currentInput, timestamp: new Date(), attachments: uiAtts }]);
+    const displayInput = currentLat && currentLon 
+      ? `${currentInput}\n[Locație: ${currentLat}, ${currentLon}]`
+      : currentInput;
+
+    setMessages(prev => [...prev, { role: 'user', text: displayInput, timestamp: new Date(), attachments: uiAtts }]);
     setIsLoading(true);
     try {
         const atts: Attachment[] = [];
         if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
-        const res = await sendMessageToGemini(currentInput, atts, 'sf_expert');
-        setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date() }]);
+        
+        const fullPrompt = currentLat && currentLon 
+          ? `LOCAȚIE GPS: Lat ${currentLat}, Lon ${currentLon}\n\n${currentInput}`
+          : currentInput;
+
+        let res;
+        if (aiModel === 'gemini') {
+          res = await sendMessageToGemini(fullPrompt, atts, 'sf_expert');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          res = await callNvidiaAI(aiModel, fullPrompt, 'sf_expert', atts);
+        }
+        
+        setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date(), isReport: true }]);
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
@@ -115,10 +184,25 @@ export const HeliosChat: React.FC = () => {
             <div className="bg-teal-900/30 p-1.5 md:p-2 rounded-xl border border-teal-500/30"><ScrollText className="w-5 h-5 md:w-6 h-6 text-teal-400" /></div>
             <div>
               <h2 className="text-white font-bold tracking-wide flex items-center gap-2 text-xs md:text-base">HELIO SF Expert <span className="hidden sm:inline px-2 py-0.5 rounded text-[9px] bg-teal-950 text-teal-300 border border-teal-700/50 font-mono">HG 907</span></h2>
-              <p className="text-[10px] text-teal-400/70 font-mono uppercase tracking-tighter">Technical & Legal Synthesis</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] text-teal-400/70 font-mono uppercase tracking-tighter">Technical & Legal Synthesis</p>
+                <span className="w-1 h-1 rounded-full bg-teal-800"></span>
+                <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab('settings'); }} className="text-[9px] text-amber-500/80 hover:text-amber-400 font-bold uppercase tracking-tight underline underline-offset-2">Upgrade Limits</a>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            <select 
+              value={aiModel} 
+              onChange={(e) => setAiModel(e.target.value as any)}
+              className="bg-teal-950 border border-teal-800 text-teal-300 text-[10px] rounded-lg px-2 py-1 focus:outline-none focus:border-teal-500 font-mono"
+            >
+              <option value="gemini">Gemini 3 Pro</option>
+              <option value="deepseek">DeepSeek V3.2</option>
+              <option value="qwen">Qwen 3.5 397B</option>
+              <option value="kimi">Kimi K2.5</option>
+              <option value="glm5">GLM-5 Thinking</option>
+            </select>
             <button onClick={() => setShowMobileInfo(!showMobileInfo)} className="xl:hidden p-2 hover:bg-teal-900/30 rounded-lg text-teal-500">{showMobileInfo ? <X className="w-4 h-4" /> : <Info className="w-4 h-4" />}</button>
             <button onClick={clearHistory} className="p-2 hover:bg-teal-900/30 rounded-lg text-teal-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
           </div>
@@ -127,25 +211,114 @@ export const HeliosChat: React.FC = () => {
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${msg.role === 'user' ? 'bg-slate-800 border-slate-600' : 'bg-teal-900/20 border-teal-500/30 shadow-inner'}`}>{msg.role === 'user' ? <User className="w-4 h-4 text-slate-300" /> : <Bot className="w-4 h-4 text-teal-300" />}</div>
-              <div className={`px-4 py-3 rounded-xl max-w-[85%] text-xs md:text-sm shadow-lg ${msg.role === 'user' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-[#0a2020] text-teal-50 border border-teal-900/50'}`}>
+              <div className={`px-4 py-3 rounded-xl max-w-[85%] text-xs md:text-sm shadow-lg relative group ${msg.role === 'user' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-[#0a2020] text-teal-50 border border-teal-900/50'}`}>
                 {msg.attachments?.map((att, i) => <div key={i} className="mb-2">{att.type === 'audio' && <div className="flex items-center gap-2 text-teal-400 text-[10px] italic"><Mic className="w-3 h-3" /> Audio Attached</div>}{att.type === 'image' && att.url && <img src={att.url} className="max-w-xs rounded-lg" />}</div>)}
                 <div className="whitespace-pre-wrap">{msg.text}</div>
+                {msg.role === 'assistant' && msg.isReport && (
+                  <button 
+                    onClick={() => generatePDF(msg.text)}
+                    className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-[10px] uppercase font-bold transition-all"
+                  >
+                    <Download className="w-3 h-3" /> Export PDF Report
+                  </button>
+                )}
               </div>
             </div>
           ))}
           {isLoading && <div className="flex gap-4"><div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-900/20 border border-teal-500/30 flex items-center justify-center"><Bot className="w-4 h-4 text-teal-300" /></div><div className="bg-[#0a2020] border border-teal-900/50 px-4 py-3 rounded-xl flex items-center gap-2 shadow-lg"><Sparkles className="w-4 h-4 text-teal-400 animate-spin" /><span className="text-[10px] text-teal-300 font-mono uppercase tracking-widest">HG 907 Processing...</span></div></div>}
           <div ref={messagesEndRef} />
         </div>
-        <div className="p-3 md:p-4 bg-[#0a1a1a] border-t border-teal-900/50 shrink-0">
-          <div className="max-w-4xl mx-auto space-y-2">
-            {selectedFile && <div className="text-[10px] text-teal-400 bg-teal-900/20 px-2 py-1 rounded w-fit flex gap-2">{selectedFile.name} <button onClick={removeFile}><X className="w-3 h-3"/></button></div>}
-            <div className="relative flex items-center gap-2">
-              <input type="file" ref={fileInputRef} onChange={e => {if(e.target.files) setSelectedFile(e.target.files[0])}} className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-800 text-slate-400 rounded-xl"><Paperclip className="w-5 h-5"/></button>
-              <button onClick={isRecording ? () => {if(mediaRecorderRef.current) mediaRecorderRef.current.stop(); setIsRecording(false);} : startRecording} className={`p-3 rounded-xl ${isRecording ? 'bg-red-900 text-red-400' : 'bg-slate-800 text-slate-400'}`}>{isRecording ? <StopCircle className="w-5 h-5"/> : <Mic className="w-5 h-5" />}</button>
-              <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Enter SF requirements..." className="flex-1 bg-[#051313] border border-teal-900 focus:border-teal-500 rounded-lg pl-4 pr-12 py-3 text-xs md:text-sm text-teal-50 focus:outline-none transition-all font-mono shadow-inner" />
-              <button onClick={handleSend} disabled={isLoading} className="absolute right-2 p-2 bg-teal-700 text-white rounded-md"><Send className="w-4 h-4" /></button>
+        <div className="p-4 md:p-6 bg-[#0a1a1a] border-t border-teal-900/50 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          <div className="max-w-5xl mx-auto space-y-4">
+            {/* Top Row: GPS & File Status */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex-1 grid grid-cols-2 gap-3">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <MapPin className="w-4 h-4 text-teal-500 group-focus-within:text-teal-400 transition-colors" />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={lat} 
+                    onChange={e => setLat(e.target.value)} 
+                    placeholder="Latitudine (ex: 44.4268)" 
+                    className="w-full bg-[#051313] border border-teal-900/50 rounded-xl pl-10 pr-4 py-2.5 text-xs text-teal-50 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 font-mono transition-all"
+                  />
+                </div>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <MapPin className="w-4 h-4 text-teal-500 group-focus-within:text-teal-400 transition-colors" />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={lon} 
+                    onChange={e => setLon(e.target.value)} 
+                    placeholder="Longitudine (ex: 26.1025)" 
+                    className="w-full bg-[#051313] border border-teal-900/50 rounded-xl pl-10 pr-4 py-2.5 text-xs text-teal-50 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 font-mono transition-all"
+                  />
+                </div>
+              </div>
+
+              {selectedFile && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-teal-500/10 border border-teal-500/30 rounded-xl animate-in zoom-in duration-300">
+                  <FileIcon className="w-4 h-4 text-teal-400" />
+                  <span className="text-[10px] font-bold text-teal-200 truncate max-w-[150px]">{selectedFile.name}</span>
+                  <button onClick={removeFile} className="p-1 hover:bg-teal-500/20 rounded-full text-teal-400 hover:text-red-400 transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Bottom Row: Main Controls */}
+            <div className="flex flex-wrap md:flex-nowrap items-end gap-3">
+              <div className="flex gap-2 shrink-0">
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="flex flex-col items-center justify-center gap-1 px-3 md:px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-2xl border border-slate-700 transition-all group min-w-[70px] md:min-w-[80px]"
+                  title="Încarcă Document SF"
+                >
+                  <Paperclip className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span className="text-[9px] font-black uppercase tracking-tighter">Atașează</span>
+                </button>
+                
+                <button 
+                  onClick={isRecording ? () => {if(mediaRecorderRef.current) mediaRecorderRef.current.stop(); setIsRecording(false);} : startRecording} 
+                  className={`flex flex-col items-center justify-center gap-1 px-3 md:px-4 py-3 rounded-2xl border transition-all min-w-[70px] md:min-w-[80px] ${
+                    isRecording 
+                      ? 'bg-red-900/40 border-red-500 text-red-400 animate-pulse' 
+                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                  title="Înregistrare Audio"
+                >
+                  {isRecording ? <StopCircle className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  <span className="text-[9px] font-black uppercase tracking-tighter">{isRecording ? 'Stop' : 'Audio'}</span>
+                </button>
+              </div>
+
+              <div className="flex-1 relative min-w-[200px] w-full">
+                <textarea 
+                  value={input} 
+                  onChange={e => setInput(e.target.value)} 
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }} 
+                  placeholder="Descrie cerințele SF sau încarcă un model..." 
+                  className="w-full bg-[#051313] border border-teal-900/50 focus:border-teal-500 rounded-2xl pl-4 pr-14 py-4 text-sm text-teal-50 focus:outline-none transition-all font-mono shadow-inner min-h-[64px] max-h-[200px] resize-none"
+                />
+                <button 
+                  onClick={handleSend} 
+                  disabled={isLoading || (!input.trim() && !selectedFile)} 
+                  className="absolute right-3 bottom-3 p-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-teal-900/20"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <input type="file" ref={fileInputRef} onChange={e => {if(e.target.files) setSelectedFile(e.target.files[0])}} className="hidden" />
           </div>
         </div>
       </div>

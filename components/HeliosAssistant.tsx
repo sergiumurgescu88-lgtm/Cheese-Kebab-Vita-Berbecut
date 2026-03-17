@@ -5,7 +5,7 @@ import { sendMessageToGemini } from '../services/geminiService';
 export const HeliosAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', text: string}[]>([
-    { role: 'assistant', text: "Hello! I am SMART HELIOS AI. Ask me about the 47 modules, API integrations, or financial projections." }
+    { role: 'assistant', text: "Hello! I am SMART RENOWABLE AI. Ask me about the 47 modules, API integrations, or financial projections." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +50,7 @@ export const HeliosAssistant: React.FC = () => {
                 <Bot className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-sm">Helios Assistant</h3>
+                <h3 className="text-white font-semibold text-sm">Smart Renowable Assistant</h3>
                 <p className="text-xs text-emerald-400 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                   Online

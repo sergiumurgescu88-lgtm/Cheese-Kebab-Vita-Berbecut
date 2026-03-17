@@ -20,13 +20,14 @@ export const AtlasChat: React.FC = () => {
         return parsed.map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
       } catch (e) { console.error(e); }
     }
-    return [{ role: 'assistant', text: "ATLAS Systems Online. Integration Engine Active. 47 Modules loaded. Which API shall we architect?", timestamp: new Date() }];
+    return [{ role: 'assistant', text: "SMART RENOWABLE Systems Online. Integration Engine Active. 47 Modules loaded. Which API shall we architect?", timestamp: new Date() }];
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showMobileInfo, setShowMobileInfo] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [aiModel, setAiModel] = useState<'gemini' | 'kimi' | 'qwen' | 'glm5' | 'deepseek'>('qwen');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +68,15 @@ export const AtlasChat: React.FC = () => {
     try {
         const atts: Attachment[] = [];
         if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
-        const res = await sendMessageToGemini(currentInput, atts, 'atlas');
+        
+        let res;
+        if (aiModel === 'gemini') {
+          res = await sendMessageToGemini(currentInput, atts, 'atlas');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          res = await callNvidiaAI(aiModel, currentInput, 'atlas', atts);
+        }
+        
         setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date() }]);
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
@@ -83,7 +92,15 @@ export const AtlasChat: React.FC = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setMessages(prev => [...prev, { role: 'user', text: "🎤 System API Command", timestamp: new Date(), attachments: [{ type: 'audio' }] }]);
         const base64 = await fileToBase64(audioBlob);
-        const res = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'atlas');
+        
+        let res;
+        if (aiModel === 'gemini') {
+          res = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'atlas');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          res = await callNvidiaAI(aiModel, "Audio processed (text context only)", 'atlas', [{ mimeType: audioBlob.type, data: base64 }]);
+        }
+        
         setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date() }]);
         setIsLoading(false);
         stream.getTracks().forEach(t => t.stop());
@@ -115,6 +132,17 @@ export const AtlasChat: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            <select 
+              value={aiModel} 
+              onChange={(e) => setAiModel(e.target.value as any)}
+              className="bg-violet-950 border border-violet-800 text-violet-300 text-[10px] rounded-lg px-2 py-1 focus:outline-none focus:border-violet-500 font-mono"
+            >
+              <option value="gemini">Gemini 3 Pro</option>
+              <option value="deepseek">DeepSeek V3.2</option>
+              <option value="qwen">Qwen 3.5 397B</option>
+              <option value="kimi">Kimi K2.5</option>
+              <option value="glm5">GLM-5 Thinking</option>
+            </select>
             <button onClick={() => setShowMobileInfo(!showMobileInfo)} className="xl:hidden p-2 hover:bg-violet-900/30 rounded-lg text-violet-500">{showMobileInfo ? <X className="w-4 h-4" /> : <Info className="w-4 h-4" />}</button>
             <button onClick={() => setMessages([{ role: 'assistant', text: "ATLAS Logs purged.", timestamp: new Date() }])} className="p-2 hover:bg-violet-900/30 rounded-lg text-violet-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
           </div>

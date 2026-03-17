@@ -18,6 +18,7 @@ export const MercuriaSection: React.FC = () => {
   const [showMobileInfo, setShowMobileInfo] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [aiModel, setAiModel] = useState<'gemini' | 'kimi' | 'qwen' | 'glm5' | 'deepseek'>('qwen');
 
   const modules = [
     { title: "Unified Portfolio", icon: Globe, desc: "One Gate for Solar, Wind, BESS" },
@@ -73,7 +74,15 @@ export const MercuriaSection: React.FC = () => {
     try {
       const atts: Attachment[] = [];
       if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
-      const responseText = await sendMessageToGemini(currentInput, atts, 'mercuria');
+      
+      let responseText;
+      if (aiModel === 'gemini') {
+        responseText = await sendMessageToGemini(currentInput, atts, 'mercuria');
+      } else {
+        const { callNvidiaAI } = await import('../services/geminiService');
+        responseText = await callNvidiaAI(aiModel, currentInput, 'mercuria', atts);
+      }
+      
       setMessages(prev => [...prev, { role: 'assistant', text: responseText, timestamp: new Date() }]);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
@@ -89,7 +98,15 @@ export const MercuriaSection: React.FC = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setMessages(prev => [...prev, { role: 'user', text: "🎤 Market Strategy Voice Log", timestamp: new Date(), attachments: [{ type: 'audio' }] }]);
         const base64 = await fileToBase64(audioBlob);
-        const res = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'mercuria');
+        
+        let res;
+        if (aiModel === 'gemini') {
+          res = await sendMessageToGemini("", [{ mimeType: audioBlob.type, data: base64 }], 'mercuria');
+        } else {
+          const { callNvidiaAI } = await import('../services/geminiService');
+          res = await callNvidiaAI(aiModel, "Audio processed (text context only)", 'mercuria', [{ mimeType: audioBlob.type, data: base64 }]);
+        }
+        
         setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date() }]);
         setIsLoading(false);
         stream.getTracks().forEach(t => t.stop());
@@ -110,6 +127,17 @@ export const MercuriaSection: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            <select 
+              value={aiModel} 
+              onChange={(e) => setAiModel(e.target.value as any)}
+              className="bg-emerald-950 border border-emerald-800 text-emerald-300 text-[10px] rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-mono"
+            >
+              <option value="gemini">Gemini 3 Pro</option>
+              <option value="deepseek">DeepSeek V3.2</option>
+              <option value="qwen">Qwen 3.5 397B</option>
+              <option value="kimi">Kimi K2.5</option>
+              <option value="glm5">GLM-5 Thinking</option>
+            </select>
             <button onClick={() => setShowMobileInfo(!showMobileInfo)} className="xl:hidden p-2 hover:bg-emerald-900/30 rounded-lg text-emerald-500">{showMobileInfo ? <X className="w-4 h-4" /> : <Info className="w-4 h-4" />}</button>
             <button onClick={() => setMessages([{ role: 'assistant', text: "MERCURIA session reset.", timestamp: new Date() }])} className="p-2 hover:bg-emerald-900/30 rounded-lg text-emerald-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
           </div>

@@ -106,7 +106,7 @@ export const FusionSolarDashboard: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+    <div className="h-full overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
