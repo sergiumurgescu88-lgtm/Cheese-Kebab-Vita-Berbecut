@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   TrendingUp, Globe, Briefcase, RefreshCcw, Calendar, 
-  BarChart2, Zap, Send, Bot, User, Cpu, Trash2, DollarSign, Info, X, Paperclip, Mic, StopCircle
+  BarChart2, Zap, Send, Bot, User, Cpu, Trash2, DollarSign, Info, X, Paperclip, Mic, StopCircle, FileText, FileCode
 } from 'lucide-react';
 import { sendMessageToGemini, Attachment } from '../services/geminiService';
+import * as mammoth from 'mammoth';
 
 interface Message {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
-  attachments?: { type: 'audio' | 'image' | 'pdf', name?: string }[];
+  attachments?: { type: 'audio' | 'image' | 'pdf' | 'word' | 'file', name?: string }[];
 }
 
 const HISTORY_KEY = 'mercuria_chat_history';
@@ -66,21 +67,46 @@ export const MercuriaSection: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     const uiAtts: any[] = [];
-    if (currentFile) uiAtts.push({ type: 'pdf', name: currentFile.name });
+    if (currentFile) {
+      let type: 'audio' | 'image' | 'pdf' | 'word' | 'file' = 'file';
+      if (currentFile.type.startsWith('image')) type = 'image';
+      else if (currentFile.type === 'application/pdf') type = 'pdf';
+      else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) type = 'word';
+      
+      uiAtts.push({ type, name: currentFile.name });
+    }
 
     setMessages(prev => [...prev, { role: 'user', text: currentInput, timestamp: new Date(), attachments: uiAtts }]);
     setIsLoading(true);
 
     try {
       const atts: Attachment[] = [];
-      if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
+      let finalPrompt = currentInput;
+
+      if (currentFile) {
+        if (currentFile.type === 'application/pdf' || currentFile.type.startsWith('image/')) {
+          atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
+        } else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) {
+          // Extract text from docx
+          const arrayBuffer = await currentFile.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          finalPrompt = `[CONTINUT DOCUMENT WORD: ${currentFile.name}]\n${result.value}\n\n[INSTRUCTIUNE UTILIZATOR]\n${finalPrompt}`;
+        } else {
+          // Fallback for other files
+          if (currentFile.size < 1024 * 1024) { // 1MB limit for unknown files
+             atts.push({ mimeType: currentFile.type || 'application/octet-stream', data: await fileToBase64(currentFile) });
+          }
+        }
+      }
       
       let responseText;
-      if (aiModel === 'gemini') {
-        responseText = await sendMessageToGemini(currentInput, atts, 'mercuria');
+      const effectiveModel = currentFile ? 'gemini' : aiModel;
+      
+      if (effectiveModel === 'gemini') {
+        responseText = await sendMessageToGemini(finalPrompt, atts, 'mercuria', 'gemini-3.1-pro-preview');
       } else {
         const { callNvidiaAI } = await import('../services/geminiService');
-        responseText = await callNvidiaAI(aiModel, currentInput, 'mercuria', atts);
+        responseText = await callNvidiaAI(effectiveModel as any, finalPrompt, 'mercuria', atts);
       }
       
       setMessages(prev => [...prev, { role: 'assistant', text: responseText, timestamp: new Date() }]);
@@ -147,7 +173,14 @@ export const MercuriaSection: React.FC = () => {
             <div key={idx} className={`flex gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border shadow-inner ${msg.role === 'user' ? 'bg-slate-800 border-slate-600' : 'bg-emerald-900/20 border-emerald-500/30 shadow-inner'}`}>{msg.role === 'user' ? <User className="w-4 h-4 text-slate-300" /> : <Bot className="w-4 h-4 text-emerald-300" />}</div>
               <div className={`px-4 py-3 rounded-xl max-w-[85%] text-xs md:text-sm leading-relaxed shadow-lg ${msg.role === 'user' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-[#064e3b] text-emerald-50 border border-emerald-900/50'}`}>
-                {msg.attachments?.map((att, i) => <div key={i} className="mb-2">{att.type === 'audio' && <div className="text-[10px] text-emerald-400 italic flex items-center gap-2"><Mic className="w-3 h-3"/> Market Strategy Voice Attached</div>}</div>)}
+                {msg.attachments?.map((att, i) => (
+                  <div key={i} className="mb-2">
+                    {att.type === 'audio' && <div className="text-[10px] text-emerald-400 italic flex items-center gap-2"><Mic className="w-3 h-3"/> Market Strategy Voice Attached</div>}
+                    {att.type === 'pdf' && <div className="text-[10px] text-emerald-400 italic flex items-center gap-2"><FileText className="w-3 h-3"/> PDF: {att.name}</div>}
+                    {att.type === 'word' && <div className="text-[10px] text-emerald-400 italic flex items-center gap-2"><FileCode className="w-3 h-3"/> Word: {att.name}</div>}
+                    {att.type === 'file' && <div className="text-[10px] text-emerald-400 italic flex items-center gap-2"><Paperclip className="w-3 h-3"/> File: {att.name}</div>}
+                  </div>
+                ))}
                 <div className="whitespace-pre-wrap">{msg.text}</div>
               </div>
             </div>
@@ -159,8 +192,8 @@ export const MercuriaSection: React.FC = () => {
           <div className="max-w-4xl mx-auto space-y-2">
             {selectedFile && <div className="text-[10px] text-emerald-400 bg-emerald-900/20 px-2 py-1 rounded w-fit flex gap-2">{selectedFile.name} <button onClick={() => setSelectedFile(null)}><X className="w-3 h-3"/></button></div>}
             <div className="relative flex items-center gap-2">
-              <input type="file" ref={fileInputRef} onChange={e => e.target.files && setSelectedFile(e.target.files[0])} className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-800 text-slate-400 rounded-xl"><Paperclip className="w-5 h-5"/></button>
+              <input type="file" ref={fileInputRef} onChange={e => e.target.files && setSelectedFile(e.target.files[0])} className="hidden" accept=".pdf,.doc,.docx,image/*" />
+              <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-800 text-slate-400 rounded-xl" title="Încarcă Document Tehnic"><Paperclip className="w-5 h-5"/></button>
               <button onClick={isRecording ? () => mediaRecorderRef.current?.stop() : startRecording} className={`p-3 rounded-xl ${isRecording ? 'bg-red-900 text-red-400' : 'bg-slate-800 text-slate-400'}`}>{isRecording ? <StopCircle className="w-5 h-5"/> : <Mic className="w-5 h-5" />}</button>
               <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Analyze market positions..." className="flex-1 bg-[#022119] border border-emerald-900 focus:border-emerald-500 rounded-lg pl-4 pr-12 py-3 text-xs md:text-sm text-emerald-50 focus:outline-none transition-all font-mono shadow-inner" />
               <button onClick={handleSend} disabled={isLoading} className="absolute right-2 p-2 bg-emerald-700 text-white rounded-md"><Send className="w-4 h-4" /></button>

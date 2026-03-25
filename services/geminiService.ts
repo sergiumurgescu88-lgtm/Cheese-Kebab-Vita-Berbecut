@@ -1,9 +1,9 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { modules } from "../data/modules";
-import { solarMonitoringDocs, hg907Docs, omniScadaDocs, voltaDocs, mercuriaDocs } from "../data/knowledgeBase";
+import { solarMonitoringDocs, hg907Docs, omniScadaDocs, voltaDocs, mercuriaDocs, autoconsumGuide2025Docs } from "../data/knowledgeBase";
 
-export type ModelType = 'gemini-3-pro-preview' | 'gemini-3-flash-preview';
+export type ModelType = 'gemini-3.1-pro-preview' | 'gemini-3-flash-preview';
 
 // --- PERSONA DEFINITIONS (Moved up to fix declaration order errors) ---
 
@@ -11,19 +11,35 @@ const SYSTEM_INSTRUCTION_ARCHITECT = `You are SMART RENOWABLE, PhD Architect. Sp
 KNOWLEDGE BASE:
 ${solarMonitoringDocs}`;
 
-const SYSTEM_INSTRUCTION_SF_EXPERT = `You are HELIO, SF Expert in HG 907/2016. You provide expert guidance on Feasibility Studies (Studiu de Fezabilitate - SF) and regulatory compliance for solar projects in Romania.
+const SYSTEM_INSTRUCTION_SF_EXPERT = `You are HELIO, SF Expert in HG 907/2016 and specialist in Technical & Legal Synthesis. You provide expert guidance on Feasibility Studies (Studiu de Fezabilitate - SF) and regulatory compliance for solar projects in Romania.
+
 KNOWLEDGE BASE:
 ${hg907Docs}
+${autoconsumGuide2025Docs}
+
+MULTIMODAL CAPABILITIES:
+- You have FULL access to analyze PDF files, images, and audio files attached to the message.
+- NEVER say you cannot read a PDF. If a PDF is attached, analyze its content thoroughly.
+- You can extract technical data, financial indicators, and legal clauses from documents.
+
+CORE CAPABILITIES & ENGINES:
+1. **Anexa 4 Engine**: Automated structure generation for SF according to HG 907/2016. You can generate the full table of contents and draft specific sections (1-7) with technical depth.
+2. **Generative Design**: Hybrid & dual-use optimization (Agrivoltaic, East-West, Bifacial). You simulate multiple layouts to find the highest yield per square meter.
+3. **Site Assessment**: GPS & geo-tech data synthesis. You analyze terrain slope, soil type, and shading from coordinates.
+4. **Climate Modeling**: 30-year risk & yield forecasting. You use P50/P90 probability models for long-term financial stability.
+5. **Legal Rigour**: Ensuring all drafting meets the latest "Ghid Autoconsum 2025" (Modernization Fund) and HG 907 standards. You know the "I - C <= 0" rule and the 10M EUR grant limits.
 
 BRANDING & OUTPUT:
 - All reports must be branded with "Smart Renowable Energy".
-- When a user uploads a document and provides coordinates, analyze the document as an example and generate a structured summary that follows HG 907/2016 requirements.
+- When a user uploads a document (like the Ghid Autoconsum 2025) and provides coordinates, analyze the document as an example and generate a structured Technical & Legal Synthesis summary that follows HG 907/2016 requirements and the specific rules of the 2025 Guide.
+- **CRITICAL: Your output will be exported to PDF. ALWAYS use a formal, structured tone with clear headings (e.g., 1. Date Generale, 2. Parametri Tehnici, 3. Analiza Economica). Do not use markdown symbols like # for headings, use plain text numbering or bold text for better PDF readability.**
 - The summary should include:
   1. Date generale (Denumire, Locație, Beneficiar)
-  2. Descrierea investiției
-  3. Date tehnice (Capacitate, Tehnologie, Producție estimată)
-  4. Indicatori economici (NPV, IRR, Payback)
-  5. Concluzii și recomandări.
+  2. Descrierea investiției (including Anexa 4 structure)
+  3. Date tehnice (Capacitate, Tehnologie, Producție estimată, Stocare MWh)
+  4. Indicatori economici (NPV, IRR, Payback, Grant/MW calculation)
+  5. Sinteză Tehnică și Juridică (Technical & Legal Synthesis - focus on HG 907 & Ghid 2025)
+  6. Concluzii și recomandări (Site Assessment & Climate Modeling insights).
 - Use a professional, business tone.`;
 
 const SYSTEM_INSTRUCTION_ATLAS = `You are ATLAS, the API Orchestrator and Technical Engine. 
@@ -85,13 +101,23 @@ export const callNvidiaAI = async (name: 'kimi' | 'qwen' | 'glm5' | 'deepseek', 
     const systemInstruction = PERSONAS[persona] + "\n\nCURRENT REAL-TIME CONTEXT:\n" + getSystemContext();
     
     let finalMessage = message;
-    if (name === 'kimi' && attachments.length > 0) {
-      // Kimi specific image format: <img src="data:mime;base64,data" />
-      const imgTags = attachments
-        .filter(att => att.mimeType.startsWith('image/'))
-        .map(att => `<img src="data:${att.mimeType};base64,${att.data}" />`)
-        .join(' ');
-      finalMessage = `${message} ${imgTags}`;
+    
+    // Handle attachments for fallback models
+    if (attachments.length > 0) {
+      if (name === 'kimi') {
+        // Kimi specific image format: <img src="data:mime;base64,data" />
+        const imgTags = attachments
+          .filter(att => att.mimeType.startsWith('image/'))
+          .map(att => `<img src="data:${att.mimeType};base64,${att.data}" />`)
+          .join(' ');
+        finalMessage = `${message} ${imgTags}`;
+      } else {
+        // For other models, add a note about the attachments if they weren't already extracted into the prompt
+        const fileNotes = attachments.map(att => `[Fișier Atașat: ${att.mimeType}]`).join(' ');
+        if (!finalMessage.includes('[CONTINUT DOCUMENT')) {
+          finalMessage = `${finalMessage}\n\n(Notă: Utilizatorul a atașat ${attachments.length} fișiere pe care acest model de rezervă s-ar putea să nu le poată procesa direct.)`;
+        }
+      }
     }
 
     const response = await fetch(`/api/ai/${name}`, {
@@ -114,15 +140,18 @@ export const sendMessageToGemini = async (
   message: string, 
   attachments: Attachment[] = [], 
   persona: Persona = 'architect',
-  model: ModelType = 'gemini-3-pro-preview'
+  model: ModelType = 'gemini-3.1-pro-preview'
 ) => {
-  // Use the provided paid API key as primary, fallback to environment variable
-  const PROVIDED_KEY = "AIzaSyAADhE_DZZnaNlqZ-ztDM9gN4599zsjZos";
-  const apiKey = process.env.API_KEY || PROVIDED_KEY;
+  // Use GEMINI_API_KEY or API_KEY as per instructions
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+  if (!apiKey) {
+    console.warn("Gemini API key is missing from environment. API calls may fail.");
+  }
 
   // Try Gemini first
   try {
-    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const ai = new GoogleGenAI({ apiKey: apiKey || "" });
     const parts: any[] = [];
     if (message && message.trim() !== '') {
       parts.push({ text: message });
@@ -130,6 +159,7 @@ export const sendMessageToGemini = async (
 
     if (attachments && attachments.length > 0) {
       attachments.forEach(att => {
+        console.log(`Adding attachment to Gemini request: ${att.mimeType}`);
         parts.push({ 
           inlineData: { 
             mimeType: att.mimeType, 
@@ -143,19 +173,28 @@ export const sendMessageToGemini = async (
 
     const systemInstruction = PERSONAS[persona] + "\n\nCURRENT REAL-TIME CONTEXT:\n" + getSystemContext();
 
+    // Use the requested model, default to pro for complex analysis
+    const selectedModel = model || 'gemini-3.1-pro-preview';
+
+    console.log(`Calling Gemini model: ${selectedModel}`);
     const response = await ai.models.generateContent({
-      model: model, 
+      model: selectedModel, 
       contents: { parts: parts },
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.7,
+        temperature: 0.1,
         topP: 0.95,
       }
     });
     
-    return response.text || "I couldn't generate a response.";
-  } catch (error) {
-    console.warn("Gemini failed, falling back to NVIDIA models...", error);
+    if (!response.text) {
+      console.error("Gemini returned empty response text.");
+      throw new Error("Empty response from Gemini");
+    }
+
+    return response.text;
+  } catch (error: any) {
+    console.error("Gemini Critical Failure:", error?.message || error);
     
     // Fallback chain
     const fallbacks: ('qwen' | 'deepseek' | 'kimi' | 'glm5')[] = ['qwen', 'deepseek', 'kimi', 'glm5'];
@@ -180,7 +219,7 @@ export const analyzeModuleAction = async (moduleTitle: string, action: string) =
   const ai = new GoogleGenAI({ apiKey: apiKey });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       contents: `User wants to "${action}" for module "${moduleTitle}". Suggest a technical implementation plan including necessary API handshakes and safety protocols.`,
       config: {
         systemInstruction: "You are ATLAS Technical Engine. Provide detailed, implementation-ready JSON structures and logic flows."

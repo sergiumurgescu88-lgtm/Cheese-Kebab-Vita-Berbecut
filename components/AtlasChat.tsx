@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Terminal, Code, Cpu, Network, X, Trash2, Zap, Info, Layers, Database, Globe, Shield, Paperclip, Mic, StopCircle, FileIcon, Image as ImageIcon } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Terminal, Code, Cpu, Network, X, Trash2, Zap, Info, Layers, Database, Globe, Shield, Paperclip, Mic, StopCircle, FileIcon, Image as ImageIcon, FileText, FileCode } from 'lucide-react';
 import { sendMessageToGemini, Attachment } from '../services/geminiService';
+import * as mammoth from 'mammoth';
 
 interface Message {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
-  attachments?: { type: 'image' | 'audio' | 'pdf', url?: string, name?: string }[];
+  attachments?: { type: 'image' | 'audio' | 'pdf' | 'word' | 'file', url?: string, name?: string }[];
 }
 
 const HISTORY_KEY = 'atlas_tech_chat_history';
@@ -60,21 +61,46 @@ export const AtlasChat: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     const uiAtts: any[] = [];
-    if (currentFile) uiAtts.push({ type: currentFile.type.startsWith('image') ? 'image' : 'pdf', name: currentFile.name, url: currentFile.type.startsWith('image') ? URL.createObjectURL(currentFile) : undefined });
+    if (currentFile) {
+        let type: 'image' | 'audio' | 'pdf' | 'word' | 'file' = 'file';
+        if (currentFile.type.startsWith('image')) type = 'image';
+        else if (currentFile.type === 'application/pdf') type = 'pdf';
+        else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) type = 'word';
+        
+        uiAtts.push({ type, name: currentFile.name, url: type === 'image' ? URL.createObjectURL(currentFile) : undefined });
+    }
 
     setMessages(prev => [...prev, { role: 'user', text: currentInput, timestamp: new Date(), attachments: uiAtts }]);
     setIsLoading(true);
 
     try {
         const atts: Attachment[] = [];
-        if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
+        let finalPrompt = currentInput;
+
+        if (currentFile) {
+            if (currentFile.type === 'application/pdf' || currentFile.type.startsWith('image/')) {
+                atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
+            } else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) {
+                // Extract text from docx
+                const arrayBuffer = await currentFile.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                finalPrompt = `[CONTINUT DOCUMENT WORD: ${currentFile.name}]\n${result.value}\n\n[INSTRUCTIUNE UTILIZATOR]\n${finalPrompt}`;
+            } else {
+                // Fallback for other files
+                if (currentFile.size < 1024 * 1024) { // 1MB limit for unknown files
+                   atts.push({ mimeType: currentFile.type || 'application/octet-stream', data: await fileToBase64(currentFile) });
+                }
+            }
+        }
         
         let res;
-        if (aiModel === 'gemini') {
-          res = await sendMessageToGemini(currentInput, atts, 'atlas');
+        const effectiveModel = currentFile ? 'gemini' : aiModel;
+
+        if (effectiveModel === 'gemini') {
+          res = await sendMessageToGemini(finalPrompt, atts, 'atlas', 'gemini-3.1-pro-preview');
         } else {
           const { callNvidiaAI } = await import('../services/geminiService');
-          res = await callNvidiaAI(aiModel, currentInput, 'atlas', atts);
+          res = await callNvidiaAI(effectiveModel as any, finalPrompt, 'atlas', atts);
         }
         
         setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date() }]);
@@ -152,7 +178,15 @@ export const AtlasChat: React.FC = () => {
             <div key={idx} className={`flex gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${msg.role === 'user' ? 'bg-slate-800 border-slate-600' : 'bg-violet-900/50 border-violet-500/50 shadow-inner'}`}>{msg.role === 'user' ? <User className="w-4 h-4 text-slate-300" /> : <Terminal className="w-4 h-4 text-violet-300" />}</div>
               <div className={`px-4 py-3 rounded-xl max-w-[85%] text-xs md:text-sm shadow-lg ${msg.role === 'user' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-[#0F0F23] text-slate-300 border border-violet-900/40'}`}>
-                {msg.attachments?.map((att, i) => <div key={i} className="mb-2">{att.type === 'audio' && <div className="text-[10px] text-violet-400 italic flex items-center gap-2"><Mic className="w-3 h-3"/> Audio Segment Attached</div>}</div>)}
+                {msg.attachments?.map((att, i) => (
+                  <div key={i} className="mb-2">
+                    {att.type === 'image' && att.url && <img src={att.url} alt="Site" className="max-w-xs rounded-lg border border-slate-600 mb-2" />}
+                    {att.type === 'pdf' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><FileText className="w-4 h-4 text-red-400" /><span className="text-xs">{att.name}</span></div>}
+                    {att.type === 'word' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><FileCode className="w-4 h-4 text-blue-400" /><span className="text-xs">{att.name}</span></div>}
+                    {att.type === 'file' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><Paperclip className="w-4 h-4 text-slate-400" /><span className="text-xs">{att.name}</span></div>}
+                    {att.type === 'audio' && <div className="flex items-center gap-2 text-violet-400 text-[10px] mb-1 italic uppercase tracking-widest"><Mic className="w-3 h-3" /> Audio Segment Attached</div>}
+                  </div>
+                ))}
                 {formatMessage(msg.text)}
               </div>
             </div>
@@ -164,8 +198,8 @@ export const AtlasChat: React.FC = () => {
           <div className="max-w-4xl mx-auto space-y-2">
             {selectedFile && <div className="text-[10px] text-violet-400 bg-violet-900/20 px-2 py-1 rounded w-fit flex gap-2">{selectedFile.name} <button onClick={() => setSelectedFile(null)}><X className="w-3 h-3"/></button></div>}
             <div className="relative flex items-center gap-2">
-              <input type="file" ref={fileInputRef} onChange={e => e.target.files && setSelectedFile(e.target.files[0])} className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-800 text-slate-400 rounded-xl"><Paperclip className="w-5 h-5"/></button>
+              <input type="file" ref={fileInputRef} onChange={e => e.target.files && setSelectedFile(e.target.files[0])} className="hidden" accept=".pdf,.doc,.docx,image/*" />
+              <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-800 text-slate-400 rounded-xl" title="Încarcă Document Tehnic"><Paperclip className="w-5 h-5"/></button>
               <button onClick={isRecording ? () => mediaRecorderRef.current?.stop() : startRecording} className={`p-3 rounded-xl ${isRecording ? 'bg-red-900 text-red-400' : 'bg-slate-800 text-slate-400'}`}>{isRecording ? <StopCircle className="w-5 h-5"/> : <Mic className="w-5 h-5" />}</button>
               <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Initialize module deployment..." className="flex-1 bg-[#050510] border border-violet-900 focus:border-violet-500 rounded-lg pl-4 pr-12 py-3 text-xs md:text-sm text-violet-100 placeholder-violet-900/50 focus:outline-none transition-all font-mono shadow-inner" />
               <button onClick={handleSend} disabled={isLoading} className="absolute right-2 p-2 bg-violet-700 text-white rounded-md shadow-[0_0_10px_-2px_rgba(139,92,246,0.5)]"><Send className="w-4 h-4" /></button>

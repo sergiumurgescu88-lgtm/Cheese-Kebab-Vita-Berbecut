@@ -1,15 +1,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Terminal, Code, FileText, Paperclip, Mic, X, StopCircle, Image as ImageIcon, File as FileIcon, Trash2, ScrollText, Info, Gavel, FileCheck, Lightbulb, Map, Wind, Download, MapPin } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Terminal, Code, FileText, Paperclip, Mic, X, StopCircle, Image as ImageIcon, File as FileIcon, Trash2, ScrollText, Info, Gavel, FileCheck, Lightbulb, Map, Wind, Download, MapPin, FileCode } from 'lucide-react';
 import { sendMessageToGemini, Attachment } from '../services/geminiService';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import * as mammoth from 'mammoth';
 
 interface Message {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
-  attachments?: { type: 'image' | 'audio' | 'pdf', url?: string, name?: string }[];
+  attachments?: { type: 'image' | 'audio' | 'pdf' | 'word' | 'file', url?: string, name?: string }[];
   isReport?: boolean;
 }
 
@@ -71,34 +72,65 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
   const generatePDF = (text: string) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
     
-    // Header
-    doc.setFillColor(10, 32, 32); // Teal Dark
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text('Smart Renowable Energy', 20, 20);
-    doc.setFontSize(10);
-    doc.text('STUDIU DE FEZABILITATE - RAPORT TEHNIC (HG 907/2016)', 20, 30);
+    // Helper for Header on every page
+    const addHeader = (pdf: jsPDF) => {
+      pdf.setFillColor(5, 16, 16); // Very Dark Teal
+      pdf.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Electric Blue Accent Line
+      pdf.setDrawColor(0, 212, 255);
+      pdf.setLineWidth(1);
+      pdf.line(0, 35, pageWidth, 35);
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.text('Smart Renowable Energy', margin, 18);
+      pdf.setFontSize(9);
+      pdf.setTextColor(0, 212, 255);
+      pdf.text('HELIOS SF EXPERT ENGINE | HG 907/2016 & GHID 2025 COMPLIANT', margin, 28);
+    };
+
+    addHeader(doc);
     
     // Content
     doc.setTextColor(40, 40, 40);
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     
-    const splitText = doc.splitTextToSize(text, pageWidth - 40);
-    doc.text(splitText, 20, 55);
+    const splitText = doc.splitTextToSize(text, contentWidth);
+    let cursorY = 45;
+    const lineHeight = 7;
+
+    for (let i = 0; i < splitText.length; i++) {
+      if (cursorY > pageHeight - 25) {
+        doc.addPage();
+        addHeader(doc);
+        cursorY = 45;
+        doc.setTextColor(40, 40, 40);
+        doc.setFontSize(11);
+      }
+      doc.text(splitText[i], margin, cursorY);
+      cursorY += lineHeight;
+    }
     
     // Footer
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      
+      // Bottom Accent
+      doc.setDrawColor(0, 212, 255, 0.3);
+      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+      
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text(`Generat de HELIO SF Expert | Pagina ${i} din ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+      doc.text(`Document generat automat de HELIO SF Expert | Data: ${new Date().toLocaleDateString()} | Pagina ${i} din ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
     
-    doc.save(`SF_Report_${new Date().getTime()}.pdf`);
+    doc.save(`SF_Smart_Renowable_${new Date().getTime()}.pdf`);
   };
 
   const handleSendAudio = async (audioBlob: Blob) => {
@@ -140,7 +172,18 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     const uiAtts: any[] = [];
-    if (currentFile) uiAtts.push({ type: currentFile.type.startsWith('image') ? 'image' : 'pdf', name: currentFile.name, url: currentFile.type.startsWith('image') ? URL.createObjectURL(currentFile) : undefined });
+    if (currentFile) {
+      let type: 'image' | 'audio' | 'pdf' | 'word' | 'file' = 'file';
+      if (currentFile.type.startsWith('image')) type = 'image';
+      else if (currentFile.type === 'application/pdf') type = 'pdf';
+      else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) type = 'word';
+      
+      uiAtts.push({ 
+        type, 
+        name: currentFile.name, 
+        url: currentFile.type.startsWith('image') ? URL.createObjectURL(currentFile) : undefined 
+      });
+    }
 
     const displayInput = currentLat && currentLon 
       ? `${currentInput}\n[Locație: ${currentLat}, ${currentLon}]`
@@ -150,18 +193,48 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
     setIsLoading(true);
     try {
         const atts: Attachment[] = [];
-        if (currentFile) atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
-        
-        const fullPrompt = currentLat && currentLon 
+        let finalPrompt = currentLat && currentLon 
           ? `LOCAȚIE GPS: Lat ${currentLat}, Lon ${currentLon}\n\n${currentInput}`
           : currentInput;
 
+        // FORCE Gemini for file analysis as requested
+        const effectiveModel = currentFile ? 'gemini' : aiModel;
+
+        if (currentFile) {
+          console.log(`Processing file: ${currentFile.name} (${currentFile.type})`);
+          if (currentFile.type === 'application/pdf' || currentFile.type.startsWith('image/')) {
+            atts.push({ mimeType: currentFile.type, data: await fileToBase64(currentFile) });
+          } else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) {
+            // Try text extraction for Word files to ensure all models can "see" the content
+            try {
+              const arrayBuffer = await currentFile.arrayBuffer();
+              const result = await mammoth.extractRawText({ arrayBuffer });
+              if (result.value) {
+                console.log(`Extracted text from Word file: ${result.value.substring(0, 100)}...`);
+                finalPrompt = `[CONTINUT DOCUMENT WORD: ${currentFile.name}]\n${result.value}\n\n[INSTRUCTIUNE UTILIZATOR]\n${finalPrompt}`;
+              } else {
+                console.warn("Mammoth returned empty text, sending as binary");
+                atts.push({ mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: await fileToBase64(currentFile) });
+              }
+            } catch (err) {
+              console.warn("Mammoth extraction failed, sending as binary", err);
+              atts.push({ mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: await fileToBase64(currentFile) });
+            }
+          } else {
+            // Fallback for other files
+            if (currentFile.size < 2 * 1024 * 1024) { // 2MB limit for unknown files
+               atts.push({ mimeType: currentFile.type || 'application/octet-stream', data: await fileToBase64(currentFile) });
+            }
+          }
+        }
+
         let res;
-        if (aiModel === 'gemini') {
-          res = await sendMessageToGemini(fullPrompt, atts, 'sf_expert');
+        if (effectiveModel === 'gemini') {
+          // Use gemini-3.1-pro-preview for complex analysis of files
+          res = await sendMessageToGemini(finalPrompt, atts, 'sf_expert', 'gemini-3.1-pro-preview');
         } else {
           const { callNvidiaAI } = await import('../services/geminiService');
-          res = await callNvidiaAI(aiModel, fullPrompt, 'sf_expert', atts);
+          res = await callNvidiaAI(effectiveModel as any, finalPrompt, 'sf_expert', atts);
         }
         
         setMessages(prev => [...prev, { role: 'assistant', text: res, timestamp: new Date(), isReport: true }]);
@@ -170,7 +243,8 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
 
   const capabilities = [
     { title: "HG 907 Compliance", icon: Gavel, desc: "Legal rigour in SF drafting" },
-    { title: "Anexa 4 Engine", icon: FileCheck, desc: "Automated structure generation" },
+    { title: "Ghid Autoconsum 2025", icon: FileCheck, desc: "Modernization Fund (FM) Rules" },
+    { title: "Anexa 4 Engine", icon: ScrollText, desc: "Automated structure generation" },
     { title: "Generative Design", icon: Lightbulb, desc: "Hybrid & dual-use optimization" },
     { title: "Site Assessment", icon: Map, desc: "GPS & geo-tech data synthesis" },
     { title: "Climate Modeling", icon: Wind, desc: "30-year risk & yield forecasting" }
@@ -212,7 +286,15 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
             <div key={idx} className={`flex gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${msg.role === 'user' ? 'bg-slate-800 border-slate-600' : 'bg-teal-900/20 border-teal-500/30 shadow-inner'}`}>{msg.role === 'user' ? <User className="w-4 h-4 text-slate-300" /> : <Bot className="w-4 h-4 text-teal-300" />}</div>
               <div className={`px-4 py-3 rounded-xl max-w-[85%] text-xs md:text-sm shadow-lg relative group ${msg.role === 'user' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-[#0a2020] text-teal-50 border border-teal-900/50'}`}>
-                {msg.attachments?.map((att, i) => <div key={i} className="mb-2">{att.type === 'audio' && <div className="flex items-center gap-2 text-teal-400 text-[10px] italic"><Mic className="w-3 h-3" /> Audio Attached</div>}{att.type === 'image' && att.url && <img src={att.url} className="max-w-xs rounded-lg" />}</div>)}
+                {msg.attachments?.map((att, i) => (
+                  <div key={i} className="mb-2">
+                    {att.type === 'audio' && <div className="flex items-center gap-2 text-teal-400 text-[10px] italic"><Mic className="w-3 h-3" /> Audio Attached</div>}
+                    {att.type === 'image' && att.url && <img src={att.url} className="max-w-xs rounded-lg" />}
+                    {att.type === 'pdf' && <div className="flex items-center gap-2 text-teal-400 text-[10px] italic"><FileText className="w-3 h-3" /> PDF: {att.name}</div>}
+                    {att.type === 'word' && <div className="flex items-center gap-2 text-teal-400 text-[10px] italic"><FileCode className="w-3 h-3" /> Word: {att.name}</div>}
+                    {att.type === 'file' && <div className="flex items-center gap-2 text-teal-400 text-[10px] italic"><Paperclip className="w-3 h-3" /> File: {att.name}</div>}
+                  </div>
+                ))}
                 <div className="whitespace-pre-wrap">{msg.text}</div>
                 {msg.role === 'assistant' && msg.isReport && (
                   <button 
@@ -318,7 +400,7 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
                 </button>
               </div>
             </div>
-            <input type="file" ref={fileInputRef} onChange={e => {if(e.target.files) setSelectedFile(e.target.files[0])}} className="hidden" />
+            <input type="file" ref={fileInputRef} accept=".pdf,.doc,.docx,image/*" onChange={e => {if(e.target.files) setSelectedFile(e.target.files[0])}} className="hidden" />
           </div>
         </div>
       </div>

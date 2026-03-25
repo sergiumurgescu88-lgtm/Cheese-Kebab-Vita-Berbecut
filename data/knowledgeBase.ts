@@ -225,6 +225,38 @@ Acesta este un exemplu de "Așa DA" pentru un IMM cu consum mare, utilizând pan
 - Structurat riguros pe capitolele HG 907.
 `;
 
+export const autoconsumGuide2025Docs = `
+# GHIDUL SOLICITANTULUI 2025 - FONDUL PENTRU MODERNIZARE (FM)
+## PROGRAM-CHEIE 1: SURSE REGENERABILE ȘI STOCARE PENTRU AUTOCONSUM (ENTITĂȚI PUBLICE)
+
+**OBIECTIV:** Sprijinirea investițiilor în noi capacități de producere solară cu stocare integrată pentru autoconsumul entităților publice.
+
+**REGULI CRITICE DE ELIGIBILITATE:**
+1. **Autoconsum 100%:** Procentul energiei utilizate pentru autoconsum trebuie să fie de 100%. Regula de aur: I - C <= 0 (Energia injectată minus Energia consumată din rețea pe an trebuie să fie <= 0).
+2. **Capacitate Minimă:** 0.200 MW (200 kWp).
+3. **Stocare Obligatorie:** Minim 2 ore de stocare la puterea nominală a centralei. Tehnologii interzise: Plumb, NiCd, NiMH (se recomandă Li-Ion/LFP).
+4. **Plafoane Grant (Max EUR/MW):**
+   - Fără pompe de căldură: 1.300.000 EUR/MW.
+   - Cu pompe de căldură: 1.500.000 EUR/MW.
+5. **Grant Maxim:** 10.000.000 EUR per beneficiar.
+6. **Termen Finalizare:** 31.12.2029 (instalat, conectat, pus în funcțiune).
+
+**INDICATORI TEHNICI (OBLIGATORII ÎN SF):**
+- **I.1 Capacitate (MW):** Valoarea minimă dintre puterea panourilor (DC) și puterea invertoarelor (AC).
+- **I.2 Reducere CO2:** Factor de calcul = 0.5885 tone CO2/MWh.
+- **I.3 Producție Medie (MWh/an):** Minim 1000 h/an funcționare (Factor capacitate min 11.4%).
+- **I.6 Stocare (MWh):** Capacitatea nominală a bateriilor.
+
+**CONSTRÂNGERI DNSH (Do No Significant Harm):**
+- Interzis pe terenuri agricole de clasa I și II (calitate ridicată).
+- Minim 70% din deșeurile de construcție trebuie reciclate/valorificate.
+- Evaluarea impactului asupra biodiversității este critică.
+
+**CERINȚE SF (HG 907/2016):**
+- Trebuie să includă audit electroenergetic sau facturi pe 12 luni pentru justificarea consumului.
+- Documentația trebuie semnată de personal autorizat ANRE.
+`;
+
 export const omniScadaDocs = `
 # OMNI-SCADA: Platforma de Control Unificată pentru Portofolii Hibride
 

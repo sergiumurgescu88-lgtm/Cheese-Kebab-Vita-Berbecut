@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Terminal, Code, FileText, Paperclip, Mic, X, StopCircle, Image as ImageIcon, File as FileIcon, Trash2, Info, Layout, Cpu, Globe, TrendingUp, Shield } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Terminal, Code, FileText, Paperclip, Mic, X, StopCircle, Image as ImageIcon, File as FileIcon, Trash2, Info, Layout, Cpu, Globe, TrendingUp, Shield, FileCode } from 'lucide-react';
 import { sendMessageToGemini, Attachment } from '../services/geminiService';
+import * as mammoth from 'mammoth';
 
 interface Message {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
-  attachments?: { type: 'image' | 'audio' | 'pdf', url?: string, name?: string }[];
+  attachments?: { type: 'image' | 'audio' | 'pdf' | 'word' | 'file', url?: string, name?: string }[];
 }
 
 const HISTORY_KEY = 'solar_ai_chat_history';
@@ -153,7 +154,11 @@ export const SolarChat: React.FC = () => {
 
     const uiAttachments: any[] = [];
     if (currentFile) {
-        const type = currentFile.type.startsWith('image') ? 'image' : 'pdf';
+        let type: 'image' | 'audio' | 'pdf' | 'word' | 'file' = 'file';
+        if (currentFile.type.startsWith('image')) type = 'image';
+        else if (currentFile.type === 'application/pdf') type = 'pdf';
+        else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) type = 'word';
+        
         uiAttachments.push({ type, name: currentFile.name, url: type === 'image' ? URL.createObjectURL(currentFile) : undefined });
     }
 
@@ -162,17 +167,33 @@ export const SolarChat: React.FC = () => {
 
     try {
         const attachments: Attachment[] = [];
+        let finalPrompt = currentInput;
+
         if (currentFile) {
-            const base64 = await fileToBase64(currentFile);
-            attachments.push({ mimeType: currentFile.type, data: base64 });
+            if (currentFile.type === 'application/pdf' || currentFile.type.startsWith('image/')) {
+                const base64 = await fileToBase64(currentFile);
+                attachments.push({ mimeType: currentFile.type, data: base64 });
+            } else if (currentFile.type.includes('word') || currentFile.name.endsWith('.docx') || currentFile.name.endsWith('.doc')) {
+                // Extract text from docx
+                const arrayBuffer = await currentFile.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                finalPrompt = `[CONTINUT DOCUMENT WORD: ${currentFile.name}]\n${result.value}\n\n[INSTRUCTIUNE UTILIZATOR]\n${finalPrompt}`;
+            } else {
+                // Fallback for other files
+                if (currentFile.size < 1024 * 1024) { // 1MB limit for unknown files
+                   attachments.push({ mimeType: currentFile.type || 'application/octet-stream', data: await fileToBase64(currentFile) });
+                }
+            }
         }
         
         let responseText;
-        if (aiModel === 'gemini') {
-          responseText = await sendMessageToGemini(currentInput, attachments, 'architect');
+        const effectiveModel = currentFile ? 'gemini' : aiModel;
+        
+        if (effectiveModel === 'gemini') {
+          responseText = await sendMessageToGemini(finalPrompt, attachments, 'architect', 'gemini-3.1-pro-preview');
         } else {
           const { callNvidiaAI } = await import('../services/geminiService');
-          responseText = await callNvidiaAI(aiModel, currentInput, 'architect', attachments);
+          responseText = await callNvidiaAI(effectiveModel as any, finalPrompt, 'architect', attachments);
         }
         
         setMessages(prev => [...prev, { role: 'assistant', text: responseText, timestamp: new Date() }]);
@@ -253,7 +274,9 @@ export const SolarChat: React.FC = () => {
                 {msg.attachments?.map((att, i) => (
                   <div key={i} className="mb-2">
                     {att.type === 'image' && att.url && <img src={att.url} alt="Site" className="max-w-xs rounded-lg border border-slate-600 mb-2" />}
-                    {att.type === 'pdf' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><FileIcon className="w-4 h-4 text-red-400" /><span className="text-xs">{att.name}</span></div>}
+                    {att.type === 'pdf' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><FileText className="w-4 h-4 text-red-400" /><span className="text-xs">{att.name}</span></div>}
+                    {att.type === 'word' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><FileCode className="w-4 h-4 text-blue-400" /><span className="text-xs">{att.name}</span></div>}
+                    {att.type === 'file' && <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700 mb-2"><Paperclip className="w-4 h-4 text-slate-400" /><span className="text-xs">{att.name}</span></div>}
                     {att.type === 'audio' && <div className="flex items-center gap-2 text-indigo-400 text-[10px] mb-1 italic uppercase tracking-widest"><Mic className="w-3 h-3" /> Voice Segment Attached</div>}
                   </div>
                 ))}
@@ -281,8 +304,8 @@ export const SolarChat: React.FC = () => {
             {selectedFile && <div className="flex items-center gap-2 bg-indigo-900/20 px-3 py-1.5 rounded-lg border border-indigo-500/30 text-[10px] text-indigo-300 w-fit"><ImageIcon className="w-3 h-3" /> {selectedFile.name} <button onClick={removeFile}><X className="w-3 h-3 hover:text-white" /></button></div>}
             {isRecording && <div className="flex items-center gap-2 bg-red-900/20 px-3 py-1.5 rounded-lg border border-red-500/30 text-[10px] text-red-400 w-fit animate-pulse">RECORDING...</div>}
             <div className="relative flex items-center gap-2">
-              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,application/pdf" />
-              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 md:p-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl transition-colors"><Paperclip className="w-5 h-5" /></button>
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".pdf,.doc,.docx,image/*" />
+              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 md:p-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl transition-colors" title="Încarcă Document Tehnic"><Paperclip className="w-5 h-5" /></button>
               <button onClick={isRecording ? stopRecording : startRecording} className={`p-2.5 md:p-3 rounded-xl transition-colors ${isRecording ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-400'}`}>{isRecording ? <StopCircle className="w-5 h-5" /> : <Mic className="w-5 h-5" />}</button>
               <input
                 type="text"
