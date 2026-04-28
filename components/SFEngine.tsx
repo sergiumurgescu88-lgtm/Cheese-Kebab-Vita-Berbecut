@@ -29,7 +29,7 @@ const calcProductieAnuala = (putere: number, tarifMwh: number) =>
   putere * 1300 * tarifMwh; // kWh/kWp * MWp * €/MWh ≈ €/an
 
 const calcNPV = (putere: number, tarifMwh: number, durata: number, investitie: number, iradiantaPVGIS: number = 1446, trackerBonus: number = 1.0): number => {
-  const productieNetaP50 = putere * iradiantaPVGIS * 0.88 * trackerBonus;
+  const productieNetaP50 = putere * iradiantaPVGIS * 0.890 * trackerBonus;
   const opex = putere * 12000; // €12k/MW/an consistent cu tabelDCF
   const cfAn = productieNetaP50 * tarifMwh - opex;
   let npv = -investitie; // VANF/C pe investitie totala
@@ -39,7 +39,7 @@ const calcNPV = (putere: number, tarifMwh: number, durata: number, investitie: n
 
 const calcIRR = (putere: number, tarifMwh: number, investitie: number, iradiantaPVGIS: number = 1446, trackerBonus: number = 1.0): number => {
   if (!investitie) return 0;
-  const productieNetaP50 = putere * iradiantaPVGIS * 0.88 * trackerBonus;
+  const productieNetaP50 = putere * iradiantaPVGIS * 0.890 * trackerBonus;
   const cfAn = productieNetaP50 * tarifMwh - putere * 12000;
   let lo = 0, hi = 1;
   for (let i = 0; i < 200; i++) {
@@ -52,7 +52,7 @@ const calcIRR = (putere: number, tarifMwh: number, investitie: number, iradianta
 };
 
 const calcPayback = (putere: number, tarifMwh: number, investitie: number, iradiantaPVGIS: number = 1446, trackerBonus: number = 1.0): number => {
-  const productieNetaP50 = putere * iradiantaPVGIS * 0.88 * trackerBonus;
+  const productieNetaP50 = putere * iradiantaPVGIS * 0.890 * trackerBonus;
   const cf = productieNetaP50 * tarifMwh - putere * 12000;
   if (!cf) return 0;
   return Math.round((investitie / cf) * 10) / 10;
@@ -954,7 +954,7 @@ Fiecare subcapitol minim 400 cuvinte.` },
         instructiuni: `Generează CAPITOLUL 4 complet (minim 4000 cuvinte):
 4.1 Cadrul de analiză DCF: ipoteze macroeconomice, WACC 8% justificat, orizont ${durata} ani, structura fluxuri numerar, valoare reziduală
 4.2 Vulnerabilități climatice: P50/P90, fenomene extreme, degradare panouri, AQI=${aqiData?.aqi ?? 'N/A'} soiling effect detaliat, costuri curățare integrate OpEx
-4.3 Situația utilităților: rețele existente, capacitate evacuare, consum propriu, bilanț energetic
+4.3 Situația utilităților: rețele existente, capacitate evacuare SEN, consum propriu tehnologic. ATENȚIE CRITICĂ: iradianța PVGIS = ${solarData?.irradiance ?? 1446} kWh/m²/an este resursa solară per kWp instalat — NU este producția parcului. Producția netă P50 a parcului = ${productieNetaP50.toLocaleString()} MWh/an (calculată din putere × iradianță × PR × tracker). Nu confunda cele două valori în text.
 4.4 Sustenabilitate:
 4.4.1 Impact social: locuri muncă construcție+O&M, comunitate locală, taxe, efect antrenare
 4.4.2 Forța de muncă: structura echipelor proiectare/construcție/operare
