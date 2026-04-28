@@ -309,7 +309,7 @@ export const SFEngine: React.FC = () => {
         const elevData = await elevRes.json();
         const elevMeters = elevData?.results?.[0]?.elevation ? Math.round(elevData.results[0].elevation) : undefined;
         setSolarData({
-          productie: Math.round(pvData.outputs.totals.fixed.E_y),
+          productie: Math.round(pvData.outputs.totals.fixed.E_y / 1000),
           irradiance: Math.round(pvData.outputs.totals.fixed['H(i)_y'] || 0),
           elevation: elevMeters
         });
