@@ -938,6 +938,10 @@ ${(() => {
   ];
   return rows.join('\n');
 })()}
+⚠️ CONTROL OBLIGATORIU — DACĂ TABELUL TĂU ARE ALTE VALORI, EȘTI GREȘIT:
+- C4.1 echipamente = ${Math.round(parseInt(formData.valoareInvestitie||'0') * 0.670).toLocaleString()} EUR = 67% (NU 62%, NU 65%, NU altceva)
+- Total fără TVA = ${parseInt(formData.valoareInvestitie||'0').toLocaleString()} EUR (identic cu valoarea investiției)
+- Dacă ai scris 4,275,000 sau orice altă valoare diferită de cea de mai sus — EȘTI GREȘIT, rescrie tabelul.
 Analizează fiecare capitol de cheltuieli, justifică procentele față de prețurile pieței 2025, compară cu referințe similare din România.
 3.1.4 Studii de specialitate necesare (minim 500 cuvinte) — descrie detaliat fiecare studiu obligatoriu:
 Studiu topografic: ridicare topo Stereo70, scara 1:500, vizare OCPI.
