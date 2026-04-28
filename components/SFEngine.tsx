@@ -926,7 +926,7 @@ ${(() => {
     `| C1 | Cheltuieli pentru obținerea și amenajarea terenului | ${c1.toLocaleString()} | 1% |`,
     `| C2 | Cheltuieli pentru asigurarea utilităților necesare | ${c2.toLocaleString()} | 3% |`,
     `| C3 | Cheltuieli pentru proiectare și asistență tehnică | ${c3.toLocaleString()} | 4% |`,
-    `| C4.1 | Echipamente: panouri ${formData.tipPanou}, invertoare, BESS, tracker, SCADA | ${c4echip.toLocaleString()} | 62% |`,
+    `| C4.1 | Echipamente: panouri ${formData.tipPanou}, invertoare, BESS, tracker, SCADA | ${c4echip.toLocaleString()} | 67% |`,
     `| C4.2 | Montaj, racordare SEN, stație MT, cabluri DC/AC | ${c4montaj.toLocaleString()} | 20% |`,
     `| C5 | Organizare șantier | ${c5.toLocaleString()} | 2.5% |`,
     `| C6 | Cheltuieli diverse și neprevăzute (max 10% HG907) | ${c6.toLocaleString()} | 2.5% |`,
@@ -972,7 +972,7 @@ ${tabelDCF}
 Analizează tabelul: identifică anul break-even, evoluția FCF cumulat, comentează sustenabilitatea.
 4.6 Analiza economică: beneficii socio-economice cuantificate, valoare adăugată locală
 4.7 Analiza cost-eficacitate: LCOE calculat, comparație cu alternative
-4.8 Analiza sensitivitate: tabel complet ±10% PPA, ±15% CapEx, ±5% producție — impact NPV/IRR/Payback
+4.8 Analiza sensitivitate: scenariul de baza este NPV=${npv.toLocaleString()} EUR | IRR=${irr}% | Payback=${payback} ani. Genereaza tabel complet cu variații ±10% PPA, ±15% CapEx, ±5% producție — impact NPV/IRR/Payback. FOLOSESTE EXACT aceste valori de baza, NU inventa alte valori.
 4.9 Matrice riscuri:
 4.9.1 Riscuri tehnice: probabilitate×impact, măsuri mitigare
 4.9.2 Riscuri financiare: probabilitate×impact, măsuri mitigare
@@ -1031,7 +1031,7 @@ Fiecare subcapitol minim 400 cuvinte.` },
 - Aviz ANRE — înființare capacitate producere, licență, condiții
 - Aviz ISC — verificare proiect DTAC
 - Avize utilități — apă/canal, gaze, telecomunicații, drumuri
-- Aviz AACR — glare/reflexie, obstaculare zbor, procedură, criterii
+- Aviz AACR — glare/reflexie, obstaculare zbor, procedură, criterii. IMPORTANT: NU inventa distanța față de aeroport — distanța față de orașul ${formData.localitate || ""} NU este distanța față de aeroport. Menționează că distanța exactă față de aeroport va fi verificată în faza de proiectare tehnică.
 - Aviz MApN — coexistență infrastructură apărare, radare
 - Aviz PUZ dacă necesar
 6.5 Studiu topografic OCPI: Stereo 70, Marea Neagră 1975, scară 1:500-1:1000, vizare OCPI ${formData.judet || ''}
@@ -1089,7 +1089,7 @@ Fiecare subcapitol minim 400 cuvinte.` }
         const cap = CAPITOLE[idx];
         setCapProgress({ current: idx + 1, total: TOTAL, label: 'Cap. ' + cap.nr + ' — ' + cap.titlu });
 
-        const capPrompt = baseContext + '\n\nINSTRUCȚIUNI PENTRU ACEST CAPITOL:\n' + cap.instructiuni + '\n\nREGULI OBLIGATORII:\n- Limbaj tehnic-juridic profesional\n- Listele legislative cu "- " pe rând separat\n- Tabelele cu separatori "|"\n- NU include alte capitole — DOAR capitolul cerut\n- NU scrie titlul CAPITOLUL X — începe direct cu 1.1 / 2.1 etc.\n- Fiecare subcapitol (5.1, 5.2 etc.) apare O SINGURĂ DATĂ — NU repeta, NU reformula';
+        const capPrompt = baseContext + '\n\nINSTRUCȚIUNI PENTRU ACEST CAPITOL:\n' + cap.instructiuni + '\n\nREGULI OBLIGATORII:\n- Limbaj tehnic-juridic profesional\n- Listele legislative cu "- " pe rând separat\n- Tabelele cu separatori "|"\n- NU include alte capitole — DOAR capitolul cerut\n- NU scrie titlul CAPITOLUL X — începe direct cu 1.1 / 2.1 etc.\n- Fiecare subcapitol (5.1, 5.2 etc.) apare O SINGURA DATA — NU repeta, NU reformula\n- NU regenera Capitol 1, 2, 3 sau orice alt capitol in interiorul raspunsului tau\n- NU adauga titluri noi dupa ce ai terminat subcapitolele cerute\n- Cand ai terminat ultimul subcapitol cerut, OPRESTE-TE IMEDIAT — fara continut suplimentar';
 
         const result = await callAI(capPrompt, cap.nr);
         if (result) {
