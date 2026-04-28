@@ -351,9 +351,10 @@ export const SFEngine: React.FC = () => {
 
   const iradiantaCalc = solarData?.irradiance ?? 1446;
   const trackerBonusGlobal = formData.tracker?.includes('Single-axis') ? 1.135 : formData.tracker?.includes('Dual-axis') ? 1.27 : 1.0;
-  const npv = putere && investitie ? calcNPV(putere, tarif, durata, investitie, iradiantaCalc, trackerBonusGlobal) : 0;
-  const irr = putere && investitie ? calcIRR(putere, tarif, investitie, iradiantaCalc, trackerBonusGlobal) : 0;
-  const payback = putere && investitie ? calcPayback(putere, tarif, investitie, iradiantaCalc, trackerBonusGlobal) : 0;
+  const capExNet = investitie - grant; // FIX: NPV/IRR/Payback pe capEx NET (dupa grant)
+  const npv = putere && investitie ? calcNPV(putere, tarif, durata, capExNet, iradiantaCalc, trackerBonusGlobal) : 0;
+  const irr = putere && investitie ? calcIRR(putere, tarif, capExNet, iradiantaCalc, trackerBonusGlobal) : 0;
+  const payback = putere && investitie ? calcPayback(putere, tarif, capExNet, iradiantaCalc, trackerBonusGlobal) : 0;
   const grantPerMw = putere && grant ? Math.round(grant / putere / 1000) : 0; // k€/MW
   const iCRule = npv; // Regula I-C = VANF/C (NPV pe investitie totala). Daca <0 → eligibil grant
   // LCOE = (CapEx + OpEx*25ani) / Productie_totala_25ani
