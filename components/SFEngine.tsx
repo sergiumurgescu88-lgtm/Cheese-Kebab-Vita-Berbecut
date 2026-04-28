@@ -299,7 +299,7 @@ export const SFEngine: React.FC = () => {
     try {
       const putereVal = parseFloat(formData.putere) || 1;
       const [pvRes, geoRes, elevRes] = await Promise.all([
-        fetch(`/api/pvgis?lat=${lat}&lon=${lon}&peakpower=${putereVal}`),
+        fetch(`/api/pvgis?lat=${lat}&lon=${lon}&peakpower=${putereVal * 1000}`),
         fetch(`/api/geocode?lat=${lat}&lon=${lon}`),
         fetch(`/api/elevation?lat=${lat}&lon=${lon}`)
       ]);

@@ -212,7 +212,7 @@ async function startServer() {
       const comuna = a.county || a.state_district || '';
       const judet = a.state || '';
       const parts = [strada, localitate, comuna, judet].filter(Boolean);
-      const formatted_address = parts.join(', ') || r.data?.display_name || '';
+      const formatted_address = parts.join(', ');  // FIX: fara fallback display_name (elimina cimitire/POI)
       // Wrap în format compatibil cu ce așteaptă SFEngine (results[0].formatted_address)
       res.json({ results: [{ formatted_address }] });
     } catch(e: any) { res.status(502).json({ error: e.message }); }
