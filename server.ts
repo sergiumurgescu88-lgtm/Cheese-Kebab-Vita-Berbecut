@@ -142,6 +142,44 @@ async function startServer() {
   };
 
   createAIRoute("kimi");
+  // /api/ai/openrouter → GoogleGenAI SDK cu rotație 4 key-uri (primary pentru SFEngine)
+  const GEMINI_KEYS_ROT = [
+    "AIzaSyDq4yo9eWtoHD3Qa6NDFv3XhT0QRcX-CdA",
+    "AIzaSyBZW0SD6e8RMMf-0hz-j5vlR-rVTWbxZ0s",
+    "AIzaSyDfEdiGs6KHL2EipVQIZOxKVfsOHydiiO8",
+    "AIzaSyBJsmpHyeyr28yt5fkXpWZgxkCK3xp66Mk",
+    "AIzaSyCZgJy7Hon8Ees9-36OOHE0OnryvU4VI20"
+  ];
+  let gKeyIdx = 0;
+  app.post('/api/ai/openrouter', async (req, res) => {
+    const { messages, systemInstruction } = req.body;
+    for (let i = 0; i < GEMINI_KEYS_ROT.length; i++) {
+      const key = GEMINI_KEYS_ROT[(gKeyIdx + i) % GEMINI_KEYS_ROT.length];
+      try {
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: key });
+        const prompt = messages.map((m: any) => m.content).join('\n');
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+            ...(systemInstruction ? { systemInstruction } : {}),
+            temperature: 0.6,
+            maxOutputTokens: 8192
+          }
+        });
+        gKeyIdx = (gKeyIdx + i) % GEMINI_KEYS_ROT.length;
+        return res.json({ text: response.text });
+      } catch (error: any) {
+        const status = error?.status || error?.response?.status;
+        console.warn(`Gemini key ${(gKeyIdx+i)%GEMINI_KEYS_ROT.length} failed (${status})`);
+        if (i === GEMINI_KEYS_ROT.length - 1) {
+          return res.status(500).json({ error: true, message: error?.message || 'Gemini failed' });
+        }
+      }
+    }
+  });
+
   createAIRoute("qwen");
   createAIRoute("glm5");
   createAIRoute("deepseek");

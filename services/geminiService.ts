@@ -214,7 +214,7 @@ export const sendMessageToGemini = async (
 };
 
 export const analyzeModuleAction = async (moduleTitle: string, action: string) => {
-  const PROVIDED_KEY = "AIzaSyAADhE_DZZnaNlqZ-ztDM9gN4599zsjZos";
+  const PROVIDED_KEY = "AIzaSyDfEdiGs6KHL2EipVQIZOxKVfsOHydiiO8";
   const apiKey = process.env.API_KEY || PROVIDED_KEY;
   const ai = new GoogleGenAI({ apiKey: apiKey });
   try {
@@ -232,7 +232,7 @@ export const analyzeModuleAction = async (moduleTitle: string, action: string) =
 };
 
 export const findSolarParkLocation = async (query: string) => {
-  const PROVIDED_KEY = "AIzaSyAADhE_DZZnaNlqZ-ztDM9gN4599zsjZos";
+  const PROVIDED_KEY = "AIzaSyDfEdiGs6KHL2EipVQIZOxKVfsOHydiiO8";
   const apiKey = process.env.API_KEY || PROVIDED_KEY;
   const ai = new GoogleGenAI({ apiKey: apiKey });
   try {
