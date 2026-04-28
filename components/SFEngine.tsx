@@ -649,7 +649,7 @@ CAPITOLUL 3. IDENTIFICAREA ȘI PREZENTAREA SCENARIILOR/OPȚIUNILOR TEHNICO-ECONO
 3.1 Scenariul 1 — Soluția propusă: ${formData.tipPanou} + ${formData.tracker}${formData.bess !== 'Nu' ? ` + BESS ${formData.bess}` : ''}
 3.1.1 Particularități ale amplasamentului — coordonate GPS: ${formData.gps}, altitudine: ${solarData?.elevation ?? 'N/A'}m, iradianță PVGIS: ${solarData?.irradiance ?? 'N/A'} kWh/m²/an, AQI: ${aqiData?.aqi ?? 'N/A'}
 3.1.2 Descrierea tehnică — panouri ${formData.tipPanou}, invertor ${formData.tipInvertor}, structuri ${formData.tracker}${formData.bess !== 'Nu' ? `, BESS ${formData.bess}` : ''}, sistem evacuare MT, SCADA${formData.fpv !== 'Nu' ? `, sistem FPV plutitor` : ''}
-3.1.3 Costurile estimative — deviz pe categorii: echipamente (65%), montaj (20%), racordare SEN (8%), proiectare+avizare (4%), neprevăzute (3%). Total: ${parseInt(formData.valoareInvestitie || '0').toLocaleString()} EUR
+3.1.3 Costurile estimative — deviz HG907 pe categorii: C1 teren 1%, C2 utilități 3%, C3 proiectare 4%, C4.1 echipamente 67%, C4.2 montaj 20%, C5 șantier 2.5%, C6 neprevăzute 2.5%. Total fără TVA: ${parseInt(formData.valoareInvestitie || '0').toLocaleString()} EUR. REPRODUCE TABELUL EXACT din secțiunea 3.1.3, NU recalcula procentele.
 3.1.4 Studii de specialitate necesare — topografic, geotehnic, hidrologic, electromagnetic
 3.1.5 Grafic orientativ realizare — proiectare (L1-L3), avizare (L4-L9), construcție (L10-L20), PIF (L21-L24)
 3.2 Scenariul 0 — Situația de referință (fără investiție) — menținerea consumului din rețea, costuri oportunitate, impact mediu
@@ -800,6 +800,7 @@ INSTRUCȚIUNI STIL:
     dcfRows.push('|---|---|---|---|---|---|---|---|---|');
     const investitieTotal = parseInt(formData.valoareInvestitie||'0');
     let fcfCumulat = -capEx; // FIX: porneste din capEx net (investitie - grant) pentru NPV corect
+    let fcfCumulatAn1 = 0;
     let totalFCF = 0;
     let totalFCFact = 0;
     for (let an = 1; an <= durataInt; an++) {
@@ -811,6 +812,7 @@ INSTRUCȚIUNI STIL:
       const factor = Math.pow(1.08, an);
       const fcfAct = Math.round(fcf / factor);
       fcfCumulat += fcfAct;
+      if (an === 1) fcfCumulatAn1 = fcfCumulat;
       totalFCF += fcf;
       totalFCFact += fcfAct;
       dcfRows.push(`| ${an} | ${productieAn.toLocaleString()} | ${venituriAn.toLocaleString()} | ${opexAn.toLocaleString()} | ${ebitda.toLocaleString()} | ${fcf.toLocaleString()} | ${(1/factor).toFixed(4)} | ${fcfAct.toLocaleString()} | ${fcfCumulat.toLocaleString()} |`);
@@ -966,7 +968,8 @@ Grant ${formData.tipFinantare}: ${parseInt(formData.grantSolicitat||'0').toLocal
 LCOE = ${lcoe} EUR/MWh — FOLOSEȘTE EXCLUSIV această valoare precalculată. NU recalcula, NU modifica, NU folosi altă formulă. Formula reală: (InvestițieTotală + OpEx25ani) / Producție25ani = ${lcoe} EUR/MWh.
 DSCR mediu = EBITDA / serviciul datoriei — prezintă per an în tabel separat
 
-TABEL FLUX NUMERAR DCF ${durata} ANI (REPRODUCE EXACT):
+TABEL FLUX NUMERAR DCF ${durata} ANI (REPRODUCE EXACT — NU REGENERA, NU MODIFICA NICIO VALOARE):
+VALOARI CONTROL: FCF Cumulat An 1 = ${fcfCumulatAn1.toLocaleString()} EUR | CapEx NET (investiție-grant) = ${capEx.toLocaleString()} EUR
 ${tabelDCF}
 
 Analizează tabelul: identifică anul break-even, evoluția FCF cumulat, comentează sustenabilitatea.
