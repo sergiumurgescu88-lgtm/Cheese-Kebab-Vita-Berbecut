@@ -13,6 +13,7 @@ import { SettingsSection } from './components/SettingsSection';
 import { WeatherForecast } from './components/WeatherForecast';
 import { FusionSolarDashboard } from './components/FusionSolarDashboard';
 import { GlobalCommandPalette } from './components/GlobalCommandPalette';
+import { SFEngine } from './components/SFEngine';
 import { AIImageWorkbench } from './components/AIImageWorkbench';
 import { Menu, Sun, Bell, User as UserIcon, Command } from 'lucide-react';
 
@@ -41,6 +42,7 @@ const App: React.FC = () => {
       case 'volta': return <VoltaSection />;
       case 'mercuria': return <MercuriaSection />;
       case 'solar-ai': return <SolarChat />;
+      case 'sf-engine': return <SFEngine />;
       case 'helio-sf': return <HeliosChat setActiveTab={setActiveTab} />;
       case 'atlas': return <AtlasChat />;
       case 'settings': return <SettingsSection />;

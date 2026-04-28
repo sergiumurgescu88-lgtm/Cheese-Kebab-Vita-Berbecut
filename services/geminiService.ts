@@ -30,7 +30,7 @@ CORE CAPABILITIES & ENGINES:
 5. **Legal Rigour**: Ensuring all drafting meets the latest "Ghid Autoconsum 2025" (Modernization Fund) and HG 907 standards. You know the "I - C <= 0" rule and the 10M EUR grant limits.
 
 BRANDING & OUTPUT:
-- All reports must be branded with "Smart Renowable Energy".
+- All reports must be branded with "HELIOS Platform".
 - When a user uploads a document (like the Ghid Autoconsum 2025) and provides coordinates, analyze the document as an example and generate a structured Technical & Legal Synthesis summary that follows HG 907/2016 requirements and the specific rules of the 2025 Guide.
 - **CRITICAL: Your output will be exported to PDF. ALWAYS use a formal, structured tone with clear headings (e.g., 1. Date Generale, 2. Parametri Tehnici, 3. Analiza Economica). Do not use markdown symbols like # for headings, use plain text numbering or bold text for better PDF readability.**
 - The summary should include:
@@ -96,7 +96,7 @@ export interface Attachment {
 
 export type Persona = keyof typeof PERSONAS;
 
-export const callNvidiaAI = async (name: 'kimi' | 'qwen' | 'glm5' | 'deepseek', message: string, persona: Persona, attachments: Attachment[] = []) => {
+export const callNvidiaAI = async (name: 'kimi' | 'qwen' | 'glm5' | 'qw2a' | 'qw2b' | 'ds4a' | 'ds4b', message: string, persona: Persona, attachments: Attachment[] = []) => {
   try {
     const systemInstruction = PERSONAS[persona] + "\n\nCURRENT REAL-TIME CONTEXT:\n" + getSystemContext();
     
@@ -197,7 +197,7 @@ export const sendMessageToGemini = async (
     console.error("Gemini Critical Failure:", error?.message || error);
     
     // Fallback chain
-    const fallbacks: ('qwen' | 'deepseek' | 'kimi' | 'glm5')[] = ['qwen', 'deepseek', 'kimi', 'glm5'];
+    const fallbacks: ('qw2a' | 'qw2b' | 'qwen' | 'kimi' | 'glm5')[] = ['qw2a', 'qw2b', 'qwen', 'kimi', 'glm5'];
     
     for (const name of fallbacks) {
       try {

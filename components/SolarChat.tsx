@@ -29,7 +29,7 @@ export const SolarChat: React.FC = () => {
     return [
       { 
         role: 'assistant', 
-        text: "Greetings. I am Smart Renowable, your Technical Architect. I specialize in Romanian and US solar portfolio orchestration. How can I assist with the infrastructure today?", 
+        text: "Greetings. I am HELIOS Platform, your Technical Architect. I specialize in Romanian and US solar portfolio orchestration. How can I assist with the infrastructure today?", 
         timestamp: new Date() 
       }
     ];
@@ -67,10 +67,10 @@ export const SolarChat: React.FC = () => {
   }, [messages]);
 
   const clearHistory = () => {
-    if (window.confirm('Reset Smart Renowable context?')) {
+    if (window.confirm('Reset HELIOS Platform context?')) {
       const initialMsg: Message = { 
         role: 'assistant', 
-        text: "Greetings. I am Smart Renowable. Context cleared. How shall we begin the new architectural session?", 
+        text: "Greetings. I am HELIOS Platform. Context cleared. How shall we begin the new architectural session?", 
         timestamp: new Date() 
       };
       setMessages([initialMsg]);

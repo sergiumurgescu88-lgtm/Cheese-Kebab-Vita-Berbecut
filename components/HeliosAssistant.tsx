@@ -50,7 +50,7 @@ export const HeliosAssistant: React.FC = () => {
                 <Bot className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-sm">Smart Renowable Assistant</h3>
+                <h3 className="text-white font-semibold text-sm">HELIOS Platform Assistant</h3>
                 <p className="text-xs text-emerald-400 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                   Online

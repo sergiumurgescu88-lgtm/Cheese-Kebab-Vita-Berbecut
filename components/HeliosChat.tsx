@@ -88,7 +88,7 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
       
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(20);
-      pdf.text('Smart Renowable Energy', margin, 18);
+      pdf.text('HELIOS Platform', margin, 18);
       pdf.setFontSize(9);
       pdf.setTextColor(0, 212, 255);
       pdf.text('HELIOS SF EXPERT ENGINE | HG 907/2016 & GHID 2025 COMPLIANT', margin, 28);

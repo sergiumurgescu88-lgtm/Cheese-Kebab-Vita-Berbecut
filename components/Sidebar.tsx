@@ -20,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'volta', label: 'VOLTA (Master PPC)', icon: Zap },
     { id: 'mercuria', label: 'MERCURIA (Trading)', icon: TrendingUp },
     { id: 'solar-ai', label: 'SolarAI Architect', icon: Bot },
+    { id: 'sf-engine', label: 'SF Engine', icon: FileText },
     { id: 'helio-sf', label: 'Helio (SF Expert)', icon: FileText },
     { id: 'atlas', label: 'Atlas (Tech Engine)', icon: Cpu },
     { id: 'settings', label: 'System Config', icon: Settings },
