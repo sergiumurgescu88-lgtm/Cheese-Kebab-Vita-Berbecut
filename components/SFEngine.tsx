@@ -1117,7 +1117,7 @@ Fiecare subcapitol minim 400 cuvinte.` }
           // Previne titluri duble: AI poate scrie și el 'CAPITOLUL X. ...'
           let cleanResult = result.replace(/^CAPITOLUL\s+\d+[.:]?[^\n]*\n+/i, '').trim();
           // POST-PROCESARE Cap 3: inlocuim valorile deviz generate gresit de AI
-          if (cap.nr === 3) {
+          if (cap.nr === 3 || cap.nr === '3' || String(cap.nr) === '3') {
             const inv = parseInt(formData.valoareInvestitie || '0');
             const correctC4 = Math.round(inv * 0.670);
             const wrongC4 = Math.round(inv * 0.620);
