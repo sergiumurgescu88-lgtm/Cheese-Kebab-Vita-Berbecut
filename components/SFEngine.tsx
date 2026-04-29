@@ -895,7 +895,7 @@ Justifică comasarea fazelor conform HG 907/2016 art.7. Prezintă concluziile te
 2.2 Prezentarea contextului actual — cadru legislativ
 Lista completă acte normative aplicabile (fiecare pe rând nou cu "- "):
 Directive UE: RED II 2018/2001, Fit for 55, European Climate Law 2021/1119, DNSH 2020/852, Directiva 2019/944.
-Legi naționale: HG 907/2016, Legea 123/2012, OUG 944/2021, Legea 220/2008, HG 1076/2021 PNIESC, OUG 60/2022.
+Legi naționale: HG 907/2016, Legea 123/2012, OUG 94/2021, Legea 220/2008, HG 1076/2021 PNIESC, OUG 60/2022.
 Analiză piața energiei România 2025-2026: prețuri OPCOM, pondere RES, deficit capacitate.
 
 2.3 Analiza situației existente
@@ -936,14 +936,14 @@ ${(() => {
   const c4total = c4echip + c4montaj;
   const totalFaraTVA = c1+c2+c3+c4total+c5+c6;
   const tva = Math.round(totalFaraTVA * 0.19);
-  const valoriFixe = `VALORI FIXE OBLIGATORII — FOLOSESTE DOAR ACESTE NUMERE, NU RECALCULA: C1=${c1.toLocaleString()} EUR (1%), C2=${c2.toLocaleString()} EUR (3%), C3=${c3.toLocaleString()} EUR (4%), C4.1=${c4echip.toLocaleString()} EUR (62%), C4.2=${c4montaj.toLocaleString()} EUR (20%), C5=${c5.toLocaleString()} EUR (2.5%), C6=${c6.toLocaleString()} EUR (2.5%), TOTAL fara TVA=${totalFaraTVA.toLocaleString()} EUR, TVA=${tva.toLocaleString()} EUR, TOTAL cu TVA=${(totalFaraTVA+tva).toLocaleString()} EUR.`;
+  const valoriFixe = `VALORI FIXE OBLIGATORII — FOLOSESTE DOAR ACESTE NUMERE, NU RECALCULA: C1=${c1.toLocaleString()} EUR (1%), C2=${c2.toLocaleString()} EUR (3%), C3=${c3.toLocaleString()} EUR (4%), C4.1=${c4echip.toLocaleString()} EUR (67%), C4.2=${c4montaj.toLocaleString()} EUR (20%), C5=${c5.toLocaleString()} EUR (2.5%), C6=${c6.toLocaleString()} EUR (2.5%), TOTAL fara TVA=${totalFaraTVA.toLocaleString()} EUR, TVA=${tva.toLocaleString()} EUR, TOTAL cu TVA=${(totalFaraTVA+tva).toLocaleString()} EUR.`;
   const rows = [valoriFixe, 'REPRODUCE TABELUL EXACT:',
     '| Capitol | Denumire | Valoare (EUR) | % din total |',
     '|---|---|---|---|',
     `| C1 | Cheltuieli pentru obținerea și amenajarea terenului | ${c1.toLocaleString()} | 1% |`,
     `| C2 | Cheltuieli pentru asigurarea utilităților necesare | ${c2.toLocaleString()} | 3% |`,
     `| C3 | Cheltuieli pentru proiectare și asistență tehnică | ${c3.toLocaleString()} | 4% |`,
-    `| C4.1 | Echipamente: panouri ${formData.tipPanou}, invertoare, BESS, tracker, SCADA | ${c4echip.toLocaleString()} | 62% |`,
+    `| C4.1 | Echipamente: panouri ${formData.tipPanou}, invertoare, BESS, tracker, SCADA | ${c4echip.toLocaleString()} | 67% |`,
     `| C4.2 | Montaj, racordare SEN, stație MT, cabluri DC/AC | ${c4montaj.toLocaleString()} | 20% |`,
     `| C5 | Organizare șantier | ${c5.toLocaleString()} | 2.5% |`,
     `| C6 | Cheltuieli diverse și neprevăzute (max 10% HG907) | ${c6.toLocaleString()} | 2.5% |`,
