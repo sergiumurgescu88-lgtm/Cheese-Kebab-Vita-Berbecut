@@ -1119,19 +1119,18 @@ Fiecare subcapitol minim 400 cuvinte.` }
           // POST-PROCESARE Cap 3: inlocuim valorile deviz generate gresit de AI
           if (cap.nr === 3) {
             const inv = parseInt(formData.valoareInvestitie || '0');
-            const c4echip = Math.round(inv * 0.670);
-            const c4echipStr = c4echip.toLocaleString('ro-RO');
-            const c4echipStrEN = c4echip.toLocaleString('en-US');
-            // Inlocuim orice valoare diferita la C4.1 cu cea corecta
-            cleanResult = cleanResult.replace(/\| C4\.1 \|[^|]+\|[^|]+\|[^|]+\|/g, (match) => {
-              return match
-                .replace(/[\d]{1,3}(?:[.,][\d]{3})+/g, c4echipStrEN)
-                .replace(/\b6[0-9]%/, '67%');
-            });
-            // Inlocuim mentiunile text "62%" langa C4.1
-            cleanResult = cleanResult.replace(/(C4\.1[^\n]{0,200}?)62%/g, '$167%');
-            cleanResult = cleanResult.replace(/(C4\.1[^\n]{0,200}?)5[,.]270[,.]000/g, '$1' + c4echipStrEN);
-            cleanResult = cleanResult.replace(/(C4\.1[^\n]{0,200}?)5\.270\.000/g, '$1' + c4echipStrEN);
+            const correctC4 = Math.round(inv * 0.670);
+            const wrongC4 = Math.round(inv * 0.620);
+            const correctC4Str = correctC4.toLocaleString('en-US');
+            const wrongC4Str = wrongC4.toLocaleString('en-US');
+            // Simplu si sigur: replace direct string
+            while (cleanResult.includes(wrongC4Str)) {
+              cleanResult = cleanResult.split(wrongC4Str).join(correctC4Str);
+            }
+            cleanResult = cleanResult.split('| 62% |').join('| 67% |');
+            cleanResult = cleanResult.split('/ 62%').join('/ 67%');
+            cleanResult = cleanResult.split('(62%)').join('(67%)');
+            cleanResult = cleanResult.split(' 62% ').join(' 67% ');
           }
           fullSF += '\n\nCAPITOLUL ' + cap.nr + '. ' + cap.titlu + '\n\n' + cleanResult;
           setSfOutput(fullSF.trim());
