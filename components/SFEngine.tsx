@@ -413,7 +413,7 @@ export const SFEngine: React.FC = () => {
 
   const kb7_financiar = `METODOLOGIE ANALIZĂ FINANCIARĂ (model din SF-uri reale PHY GEO 2024, UPIT 2025, WTB 2022):
 Metoda: flux net de numerar actualizat (DCF), metoda incrementală exclusiv pentru proiect.
-Perioadă referință: 20 ani operare + 1 an implementare = 21 ani total.
+Perioadă referință: 25 ani operare + 1 an implementare = 26 ani total.
 Valoare reziduală: amortizare liniară — durata de viață echipamente 25 ani, referință 20 ani → reziduală 20% din investiție.
 Fluxurile non-monetare (amortizare, subvenții) nu se includ în FCF.
 
