@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature } from 'lucide-react';
+import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
