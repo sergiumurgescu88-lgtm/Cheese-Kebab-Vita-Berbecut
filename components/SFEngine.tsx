@@ -923,7 +923,10 @@ BILANȚ ENERGETIC COMPLET — REPRODUCE TABELUL EXACT:
 ${tabelBilant}
 Comentează fiecare etapă de pierdere, justifică valorile tehnic, prezintă P50 vs P90 și implicațiile pentru bancabilitate.
 3.1.2 Descrierea tehnică constructivă detaliată — prezintă fișe tehnice complete pentru: panouri ${formData.tipPanou} (eficiență, putere, garanție, certificări, producători), invertoare ${formData.tipInvertor} (topologie, randament, protecții), structuri ${formData.tracker} (material, rezistență vânt max ${climateData?.windMaxAbsolut ?? 150} km/h conform date reale OpenMeteo, sarcini zăpadă ${climateData?.zileZapadaAn ?? 20} zile/an, fundații)${formData.bess !== "Nu" ? ", BESS " + formData.bess + " (chimie LFP, cicluri, BMS, aplicații)" : ""}, sistem SCADA (monitorizare string-level, alertare, dashboard, securitate VPN).
-3.1.3 Deviz general conform HG 907/2016 — REPRODUCE TABELUL DE MAI JOS EXACT, fara sa schimbi nicio valoare sau procent. C4.1 este 67% (NU 62%). NU recalcula, NU regenera tabelul din proprie initiativa:
+3.1.3 Deviz general conform HG 907/2016.
+VALORI FIXE OBLIGATORII — FOLOSESTE DOAR ACESTE NUMERE, NU RECALCULA:
+C1=${c1.toLocaleString()} EUR (1%), C2=${c2.toLocaleString()} EUR (3%), C3=${c3.toLocaleString()} EUR (4%), C4.1=${c4echip.toLocaleString()} EUR (67%), C4.2=${c4montaj.toLocaleString()} EUR (20%), C5=${c5.toLocaleString()} EUR (2.5%), C6=${c6.toLocaleString()} EUR (2.5%), TOTAL fara TVA=${totalFaraTVA.toLocaleString()} EUR, TVA=${tva.toLocaleString()} EUR, TOTAL cu TVA=${totalCuTVA.toLocaleString()} EUR.
+REPRODUCE TABELUL EXACT CU VALORILE DE MAI SUS:
 ${(() => {
   const inv = parseInt(formData.valoareInvestitie||'0');
   const c1 = Math.round(inv * 0.010); // C1 obtinere+amenajare teren 1%
