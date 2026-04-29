@@ -12,7 +12,9 @@ import { MercuriaSection } from './components/MercuriaSection';
 import { SettingsSection } from './components/SettingsSection';
 import { WeatherForecast } from './components/WeatherForecast';
 import { FusionSolarDashboard } from './components/FusionSolarDashboard';
+import { LiveDashboard } from './components/LiveDashboard';
 import { GlobalCommandPalette } from './components/GlobalCommandPalette';
+import { EPCTenderEngine } from './components/EPCTenderEngine';
 import { SFEngine } from './components/SFEngine';
 import { AIImageWorkbench } from './components/AIImageWorkbench';
 import { Menu, Sun, Bell, User as UserIcon, Command } from 'lucide-react';
@@ -43,11 +45,13 @@ const App: React.FC = () => {
       case 'mercuria': return <MercuriaSection />;
       case 'solar-ai': return <SolarChat />;
       case 'sf-engine': return <SFEngine />;
+      case 'epc-tender': return <EPCTenderEngine />;
       case 'helio-sf': return <HeliosChat setActiveTab={setActiveTab} />;
       case 'atlas': return <AtlasChat />;
       case 'settings': return <SettingsSection />;
       case 'weather': return <WeatherForecast />;
       case 'fusionsolar': return <FusionSolarDashboard />;
+      case 'live-dashboard': return <LiveDashboard />;
       default: return <Dashboard />;
     }
   };

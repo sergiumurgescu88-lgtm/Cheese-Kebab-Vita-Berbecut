@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Server, Activity, Settings, Sun, Bot, FileText, Cpu, Zap, TrendingUp, X, CloudSun, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -15,12 +15,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'modules', label: 'Modules Inventory', icon: Server },
     { id: 'ai-workbench', label: 'AI Workbench', icon: Sparkles },
     { id: 'fusionsolar', label: 'FusionSolar Live', icon: Sun },
+    { id: 'live-dashboard', label: 'Live Dashboard', icon: Activity },
     { id: 'weather', label: 'Weather Forecast', icon: CloudSun },
     { id: 'omni-scada', label: 'OMNI-SCADA', icon: Activity },
     { id: 'volta', label: 'VOLTA (Master PPC)', icon: Zap },
     { id: 'mercuria', label: 'MERCURIA (Trading)', icon: TrendingUp },
     { id: 'solar-ai', label: 'SolarAI Architect', icon: Bot },
     { id: 'sf-engine', label: 'SF Engine', icon: FileText },
+    { id: 'epc-tender', label: 'EPC Tender Engine', icon: FileSignature },
     { id: 'helio-sf', label: 'Helio (SF Expert)', icon: FileText },
     { id: 'atlas', label: 'Atlas (Tech Engine)', icon: Cpu },
     { id: 'settings', label: 'System Config', icon: Settings },
