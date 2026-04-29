@@ -1131,6 +1131,9 @@ Fiecare subcapitol minim 400 cuvinte.` }
             cleanResult = cleanResult.split('/ 62%').join('/ 67%');
             cleanResult = cleanResult.split('(62%)').join('(67%)');
             cleanResult = cleanResult.split(' 62% ').join(' 67% ');
+            cleanResult = cleanResult.split('62%)').join('67%)');
+            cleanResult = cleanResult.split('62% din').join('67% din');
+            cleanResult = cleanResult.split('de 62%').join('de 67%');
           }
           fullSF += '\n\nCAPITOLUL ' + cap.nr + '. ' + cap.titlu + '\n\n' + cleanResult;
           setSfOutput(fullSF.trim());
