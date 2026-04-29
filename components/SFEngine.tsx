@@ -924,28 +924,26 @@ ${tabelBilant}
 Comentează fiecare etapă de pierdere, justifică valorile tehnic, prezintă P50 vs P90 și implicațiile pentru bancabilitate.
 3.1.2 Descrierea tehnică constructivă detaliată — prezintă fișe tehnice complete pentru: panouri ${formData.tipPanou} (eficiență, putere, garanție, certificări, producători), invertoare ${formData.tipInvertor} (topologie, randament, protecții), structuri ${formData.tracker} (material, rezistență vânt max ${climateData?.windMaxAbsolut ?? 150} km/h conform date reale OpenMeteo, sarcini zăpadă ${climateData?.zileZapadaAn ?? 20} zile/an, fundații)${formData.bess !== "Nu" ? ", BESS " + formData.bess + " (chimie LFP, cicluri, BMS, aplicații)" : ""}, sistem SCADA (monitorizare string-level, alertare, dashboard, securitate VPN).
 3.1.3 Deviz general conform HG 907/2016.
-VALORI FIXE OBLIGATORII — FOLOSESTE DOAR ACESTE NUMERE, NU RECALCULA:
-C1=${c1.toLocaleString()} EUR (1%), C2=${c2.toLocaleString()} EUR (3%), C3=${c3.toLocaleString()} EUR (4%), C4.1=${c4echip.toLocaleString()} EUR (67%), C4.2=${c4montaj.toLocaleString()} EUR (20%), C5=${c5.toLocaleString()} EUR (2.5%), C6=${c6.toLocaleString()} EUR (2.5%), TOTAL fara TVA=${totalFaraTVA.toLocaleString()} EUR, TVA=${tva.toLocaleString()} EUR, TOTAL cu TVA=${totalCuTVA.toLocaleString()} EUR.
-REPRODUCE TABELUL EXACT CU VALORILE DE MAI SUS:
 ${(() => {
   const inv = parseInt(formData.valoareInvestitie||'0');
-  const c1 = Math.round(inv * 0.010); // C1 obtinere+amenajare teren 1%
-  const c2 = Math.round(inv * 0.030); // C2 asigurare utilitati 3%
-  const c3 = Math.round(inv * 0.040); // C3 proiectare+asistenta tehnica 4%
-  const c4echip = Math.round(inv * 0.670); // C4.1 echipamente 67% (total 100%)
-  const c4montaj = Math.round(inv * 0.200); // C4.2 montaj+racordare 20%
-  const c5 = Math.round(inv * 0.025); // C5 organizare santier 2.5%
-  const c6 = Math.round(inv * 0.025); // C6 diverse+neprevazute max 10% HG907
+  const c1 = Math.round(inv * 0.010);
+  const c2 = Math.round(inv * 0.030);
+  const c3 = Math.round(inv * 0.040);
+  const c4echip = Math.round(inv * 0.670);
+  const c4montaj = Math.round(inv * 0.200);
+  const c5 = Math.round(inv * 0.025);
+  const c6 = Math.round(inv * 0.025);
   const c4total = c4echip + c4montaj;
   const totalFaraTVA = c1+c2+c3+c4total+c5+c6;
   const tva = Math.round(totalFaraTVA * 0.19);
-  const rows = [
+  const valoriFixe = `VALORI FIXE OBLIGATORII — FOLOSESTE DOAR ACESTE NUMERE, NU RECALCULA: C1=${c1.toLocaleString()} EUR (1%), C2=${c2.toLocaleString()} EUR (3%), C3=${c3.toLocaleString()} EUR (4%), C4.1=${c4echip.toLocaleString()} EUR (62%), C4.2=${c4montaj.toLocaleString()} EUR (20%), C5=${c5.toLocaleString()} EUR (2.5%), C6=${c6.toLocaleString()} EUR (2.5%), TOTAL fara TVA=${totalFaraTVA.toLocaleString()} EUR, TVA=${tva.toLocaleString()} EUR, TOTAL cu TVA=${(totalFaraTVA+tva).toLocaleString()} EUR.`;
+  const rows = [valoriFixe, 'REPRODUCE TABELUL EXACT:',
     '| Capitol | Denumire | Valoare (EUR) | % din total |',
     '|---|---|---|---|',
     `| C1 | Cheltuieli pentru obținerea și amenajarea terenului | ${c1.toLocaleString()} | 1% |`,
     `| C2 | Cheltuieli pentru asigurarea utilităților necesare | ${c2.toLocaleString()} | 3% |`,
     `| C3 | Cheltuieli pentru proiectare și asistență tehnică | ${c3.toLocaleString()} | 4% |`,
-    `| C4.1 | Echipamente: panouri ${formData.tipPanou}, invertoare, BESS, tracker, SCADA | ${c4echip.toLocaleString()} | 67% |`,
+    `| C4.1 | Echipamente: panouri ${formData.tipPanou}, invertoare, BESS, tracker, SCADA | ${c4echip.toLocaleString()} | 62% |`,
     `| C4.2 | Montaj, racordare SEN, stație MT, cabluri DC/AC | ${c4montaj.toLocaleString()} | 20% |`,
     `| C5 | Organizare șantier | ${c5.toLocaleString()} | 2.5% |`,
     `| C6 | Cheltuieli diverse și neprevăzute (max 10% HG907) | ${c6.toLocaleString()} | 2.5% |`,
@@ -1117,7 +1115,24 @@ Fiecare subcapitol minim 400 cuvinte.` }
         const result = await callAI(capPrompt, cap.nr);
         if (result) {
           // Previne titluri duble: AI poate scrie și el 'CAPITOLUL X. ...'
-          const cleanResult = result.replace(/^CAPITOLUL\s+\d+[.:]?[^\n]*\n+/i, '').trim();
+          let cleanResult = result.replace(/^CAPITOLUL\s+\d+[.:]?[^\n]*\n+/i, '').trim();
+          // POST-PROCESARE Cap 3: inlocuim valorile deviz generate gresit de AI
+          if (cap.nr === 3) {
+            const inv = parseInt(formData.valoareInvestitie || '0');
+            const c4echip = Math.round(inv * 0.670);
+            const c4echipStr = c4echip.toLocaleString('ro-RO');
+            const c4echipStrEN = c4echip.toLocaleString('en-US');
+            // Inlocuim orice valoare diferita la C4.1 cu cea corecta
+            cleanResult = cleanResult.replace(/\| C4\.1 \|[^|]+\|[^|]+\|[^|]+\|/g, (match) => {
+              return match
+                .replace(/[\d]{1,3}(?:[.,][\d]{3})+/g, c4echipStrEN)
+                .replace(/\b6[0-9]%/, '67%');
+            });
+            // Inlocuim mentiunile text "62%" langa C4.1
+            cleanResult = cleanResult.replace(/(C4\.1[^\n]{0,200}?)62%/g, '$167%');
+            cleanResult = cleanResult.replace(/(C4\.1[^\n]{0,200}?)5[,.]270[,.]000/g, '$1' + c4echipStrEN);
+            cleanResult = cleanResult.replace(/(C4\.1[^\n]{0,200}?)5\.270\.000/g, '$1' + c4echipStrEN);
+          }
           fullSF += '\n\nCAPITOLUL ' + cap.nr + '. ' + cap.titlu + '\n\n' + cleanResult;
           setSfOutput(fullSF.trim());
           if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
