@@ -508,7 +508,7 @@ async function startServer() {
       ...s,
       currentPower: s.status === 'ALARM' ? 0 : parseFloat((s.capacity * (0.6 + Math.random() * 0.25)).toFixed(2)),
     }));
-    res.json({ success: true, data: stations });
+    res.json({ success: true, data: stations, demo: true, notice: 'DATE DEMO — Credentiale reale Huawei FusionSolar necesare' });
   });
 
   app.get('/api/fusionsolar/realtime/:plantCode', (req: any, res: any) => {
@@ -523,7 +523,7 @@ async function startServer() {
       status: station.status === 'ALARM' && i === 2 ? 'FAULT' : 'RUNNING',
       alarms: station.status === 'ALARM' && i === 2 ? ['Grid Frequency Abnormal'] : [],
     }));
-    res.json({ success: true, data: { plant: station, invertors, mock: true, ts: Date.now() } });
+    res.json({ success: true, data: { plant: station, invertors, mock: true, ts: Date.now() }, demo: true, notice: 'DATE DEMO — Credentiale reale Huawei FusionSolar necesare' });
   });
 
   app.get('/api/fusionsolar/history/:plantCode', (req: any, res: any) => {
@@ -536,7 +536,7 @@ async function startServer() {
       const energy = parseFloat((station.capacity * 4.5 * (0.8 + Math.random() * 0.3)).toFixed(1));
       return { date: dateStr, energy, peakPower: parseFloat((station.capacity * 0.92).toFixed(2)), irradiance: parseFloat((4.8 + Math.random() * 1.2).toFixed(2)), pr: parseFloat((82 + Math.random() * 8).toFixed(1)) };
     });
-    res.json({ success: true, data: history });
+    res.json({ success: true, data: history, demo: true, notice: 'DATE DEMO — Credentiale reale Huawei FusionSolar necesare' });
   });
   // ============ END FUSIONSOLAR ============
 
