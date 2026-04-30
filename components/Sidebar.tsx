@@ -53,9 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
       `}>
         <div className="p-6 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="bg-amber-500 p-2 rounded-xl shadow-lg shadow-amber-500/10">
-              <Sun className="text-slate-950 w-6 h-6" />
-            </div>
+            <img src="/helios-logo.png" className="w-10 h-10 object-contain" alt="HELIOS" />
             <div>
               <h1 className="text-lg font-black text-white tracking-tighter leading-none">HELIOS BY SERGIU</h1>
               <p className="text-[10px] text-slate-500 uppercase font-mono tracking-widest mt-1">Helios by Sergiu v3.5</p>

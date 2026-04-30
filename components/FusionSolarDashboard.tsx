@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, RefreshCcw, Activity, Thermometer, Sun, ChevronRight, CheckCircle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getStations, getRealtimeData, getHistory, StationData, InvertorData, HistoryPoint } from '../services/fusionSolarService';
+import { ReportPDF } from './ReportPDF';
 
 export const FusionSolarDashboard: React.FC = () => {
   const [stations, setStations] = useState<StationData[]>([]);
@@ -59,6 +60,7 @@ export const FusionSolarDashboard: React.FC = () => {
             MOCK MODE · {stations.length} parcuri · actualizat {lastUpdate.toLocaleTimeString('ro')}
           </p>
         </div>
+        <ReportPDF className="mr-1" />
         <button onClick={fetchStations} className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400 hover:border-amber-500/30 transition-all">
           <RefreshCcw className="w-4 h-4" />
         </button>
