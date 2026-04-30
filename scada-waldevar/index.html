@@ -572,7 +572,7 @@ async function runPredictie() {
     const totalMWp = SITES.filter(s=>s.status==='operational').reduce((sum,x)=>sum+x.mwp,0);
     const predData = d.daily.time.map((date,i)=>{
       const irrKwh = (d.daily.shortwave_radiation_sum[i]||0)/3.6;
-      const mwh = +(totalMWp * irrKwh/1000 * 0.80).toFixed(0);
+      const mwh = +(totalMWp * irrKwh * 0.80).toFixed(0);
       const eur = +(mwh * pretSpot).toFixed(0);
       return { date, mwh, eur, irr: Math.round(irrKwh) };
     });
