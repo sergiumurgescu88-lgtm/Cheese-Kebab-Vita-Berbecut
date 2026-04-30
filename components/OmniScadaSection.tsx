@@ -4,6 +4,7 @@ import {
   TrendingUp, Briefcase, Bell, FileText, RefreshCw,
   Send, Bot, User, Cpu, Activity, Trash2, Info, X, Paperclip, Mic, StopCircle, FileIcon, FileCode, CheckCircle2, Plus, ChevronDown
 } from 'lucide-react';
+import { Truck, Clock3 } from 'lucide-react';
 import { sendMessageToGemini, Attachment } from '../services/geminiService';
 import * as mammoth from 'mammoth';
 
@@ -34,6 +35,40 @@ export const OmniScadaSection: React.FC = () => {
   ]);
   const [filtruStatus, setFiltruStatus] = useState<TicketStatus | 'Toate'>('Toate');
   const [ticketSelectat, setTicketSelectat] = useState<Ticket | null>(null);
+  const [dispatchModal, setDispatchModal] = useState(false);
+  const [dispatchTicket, setDispatchTicket] = useState<Ticket | null>(null);
+  const [dispatchForm, setDispatchForm] = useState({ echipa: '', eta: '', status: 'pending' });
+  const [dispatchLoading, setDispatchLoading] = useState(false);
+  const dispatchStatusColors: Record<string,string> = {
+    pending: 'bg-slate-700 text-slate-300',
+    enroute: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+    onsite: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+    resolved: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+  };
+  const dispatchStatusLabel: Record<string,string> = { pending:'Așteptare', enroute:'În Deplasare', onsite:'Pe Teren', resolved:'Rezolvat' };
+
+  const submitDispatch = async () => {
+    if (!dispatchTicket || !dispatchForm.echipa || !dispatchForm.eta) return;
+    setDispatchLoading(true);
+    try {
+      await fetch(`/api/tickets/${dispatchTicket.id}/dispatch`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignedTeam: dispatchForm.echipa,
+          eta: dispatchForm.eta,
+          dispatchStatus: dispatchForm.status
+        })
+      });
+      setTickets(prev => prev.map(t => t.id === dispatchTicket.id
+        ? { ...t, echipa: dispatchForm.echipa, status: 'Atribuit' as any }
+        : t
+      ));
+      setDispatchModal(false);
+    } catch(e) { console.error(e); }
+    finally { setDispatchLoading(false); }
+  };
+
   const statusColors: Record<TicketStatus, string> = {
     'Deschis': 'bg-red-500/10 text-red-400 border-red-500/30',
     'Atribuit': 'bg-amber-500/10 text-amber-400 border-amber-500/30',
@@ -260,6 +295,11 @@ export const OmniScadaSection: React.FC = () => {
                       <ChevronDown className="w-4 h-4 rotate-[-90deg]" /> Avansează Status
                     </button>
                   )}
+                  {ticketSelectat.prioritate === 'Critic' && (
+                    <button onClick={() => { setDispatchTicket(ticketSelectat); setDispatchModal(true); }} className="w-full mt-2 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                      <Truck className="w-4 h-4" /> Dispatch Echipă Teren
+                    </button>
+                  )}
                   {ticketSelectat.status === 'Verificat' && (
                     <div className="w-full py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-2">
                       <CheckCircle2 className="w-4 h-4" /> Ticket Închis
@@ -307,6 +347,64 @@ export const OmniScadaSection: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* F02 — Field Service Dispatch Modal */}
+      {dispatchModal && dispatchTicket && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-500/30 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-red-400" /> Dispatch Echipă — {dispatchTicket.id}
+              </h3>
+              <button onClick={() => setDispatchModal(false)} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
+              <p className="text-xs text-red-300 font-bold">{dispatchTicket.titlu}</p>
+              <p className="text-[10px] text-slate-400 mt-1">{dispatchTicket.parc} · {dispatchTicket.judet}</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1.5">Echipă Asignată</label>
+                <input
+                  type="text"
+                  placeholder="ex: Echipa Nord — Ion Popescu"
+                  value={dispatchForm.echipa}
+                  onChange={e => setDispatchForm(p => ({...p, echipa: e.target.value}))}
+                  className="w-full bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1.5">ETA</label>
+                <input
+                  type="datetime-local"
+                  value={dispatchForm.eta}
+                  onChange={e => setDispatchForm(p => ({...p, eta: e.target.value}))}
+                  className="w-full bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1.5">Status Inițial</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['pending','enroute','onsite','resolved'] as const).map(s => (
+                    <button key={s} onClick={() => setDispatchForm(p => ({...p, status: s}))}
+                      className={`py-2 rounded-xl text-[10px] font-bold transition-all ${dispatchForm.status === s ? dispatchStatusColors[s] + ' ring-1 ring-current' : 'bg-slate-800 text-slate-500'}`}>
+                      {dispatchStatusLabel[s]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={submitDispatch}
+              disabled={dispatchLoading || !dispatchForm.echipa || !dispatchForm.eta}
+              className="w-full mt-5 py-2.5 bg-red-500 hover:bg-red-400 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              {dispatchLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Truck className="w-4 h-4" />}
+              Trimite Echipa + Notificare Telegram
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={`absolute inset-0 z-20 bg-[#05181c] p-4 overflow-y-auto transition-transform duration-300 xl:relative xl:transform-none xl:w-80 xl:bg-transparent xl:p-0 xl:flex xl:flex-col xl:gap-4 xl:overflow-y-auto xl:pr-2 custom-scrollbar ${showMobileInfo ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}`}>
         <div className="flex justify-between items-center mb-6 xl:hidden"><div className="flex items-center gap-2"><div className="bg-cyan-500/20 p-2 rounded-lg"><Monitor className="w-5 h-5 text-cyan-400" /></div><h3 className="text-cyan-400 font-bold text-lg tracking-tight">Capabilities</h3></div><button onClick={() => setShowMobileInfo(false)} className="text-slate-500 hover:text-white transition-colors"><X className="w-6 h-6" /></button></div>
         <div className="bg-cyan-950/30 border border-cyan-900/50 p-4 rounded-xl mb-4 xl:mb-0 shadow-inner"><h3 className="text-cyan-400 font-bold text-[10px] md:text-xs mb-1 uppercase tracking-widest">CNS Modules</h3><p className="text-[10px] text-cyan-600 font-mono">STATUS: 10/10 DEPLOYED</p></div>
