@@ -53,6 +53,7 @@ const App: React.FC = () => {
       case 'helio-sf': return <HeliosChat setActiveTab={setActiveTab} />;
       case 'atlas': return <AtlasChat />;
       case 'settings': return <SettingsSection />;
+      case 'financial': return <FinancialReporting />;
       case 'weather': return <WeatherForecast />;
       case 'fusionsolar': return <FusionSolarDashboard />;
       case 'live-dashboard': return <LiveDashboard />;

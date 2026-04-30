@@ -15,6 +15,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'live-dashboard', label: 'Live Dashboard',       icon: Activity },
     { id: 'fusionsolar',    label: 'FusionSolar Live',     icon: Sun },
     { id: 'weather',        label: 'Weather Forecast',     icon: CloudSun },
+    { id: 'financial',      label: 'Raportare Financiară', icon: TrendingUp },
     { id: 'omni-scada',     label: 'OMNI-SCADA',           icon: Activity },
     { id: 'volta',          label: 'VOLTA (Master PPC)',   icon: Zap },
     { id: 'mercuria',       label: 'MERCURIA (Trading)',   icon: TrendingUp },
