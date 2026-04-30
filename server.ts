@@ -344,6 +344,27 @@ async function startServer() {
     res.json(t);
   });
 
+
+  // F02: Dispatch endpoint
+  app.patch('/api/tickets/:id/dispatch', (req: any, res: any) => {
+    const tickets = loadTickets();
+    const idx = tickets.findIndex((t: any) => t.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Not found' });
+    const { assignedTeam, eta, note, dispatchStatus } = req.body;
+    tickets[idx] = {
+      ...tickets[idx],
+      assignedTeam,
+      eta,
+      note: note || '',
+      dispatchStatus: dispatchStatus || 'enroute',
+      dispatchedAt: new Date().toISOString(),
+      status: 'ATRIBUIT',
+      updatedAt: new Date().toISOString(),
+    };
+    saveTickets(tickets);
+    res.json(tickets[idx]);
+  });
+
   app.patch('/api/tickets/:id', (req, res) => {
     const tickets = loadTickets();
     const idx = tickets.findIndex((t: any) => t.id === req.params.id);
