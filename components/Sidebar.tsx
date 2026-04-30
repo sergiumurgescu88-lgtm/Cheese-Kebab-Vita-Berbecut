@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature } from 'lucide-react';
+import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature, ScanSearch } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -24,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'sf-engine', label: 'SF Engine', icon: FileText },
     { id: 'project-cmd', label: 'Project CMD Center', icon: LayoutDashboard },
     { id: 'epc-tender', label: 'EPC Tender Engine', icon: FileSignature },
+    { id: 'inspect-ai', label: 'InspectAI (Drone)', icon: ScanSearch },
     { id: 'helio-sf', label: 'Helio (SF Expert)', icon: FileText },
     { id: 'atlas', label: 'Atlas (Tech Engine)', icon: Cpu },
     { id: 'settings', label: 'System Config', icon: Settings },

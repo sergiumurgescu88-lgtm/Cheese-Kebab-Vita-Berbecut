@@ -16,6 +16,7 @@ import { LiveDashboard } from './components/LiveDashboard';
 import { GlobalCommandPalette } from './components/GlobalCommandPalette';
 import { ProjectCMDCenter } from './components/ProjectCMDCenter';
 import { EPCTenderEngine } from './components/EPCTenderEngine';
+import { InspectAI } from './components/InspectAI';
 import { SFEngine } from './components/SFEngine';
 import { AIImageWorkbench } from './components/AIImageWorkbench';
 import { Menu, Sun, Bell, User as UserIcon, Command } from 'lucide-react';
@@ -47,6 +48,7 @@ const App: React.FC = () => {
       case 'solar-ai': return <SolarChat />;
       case 'sf-engine': return <SFEngine />;
       case 'epc-tender': return <EPCTenderEngine />;
+      case 'inspect-ai': return <InspectAI />;
       case 'project-cmd': return <ProjectCMDCenter />;
       case 'helio-sf': return <HeliosChat setActiveTab={setActiveTab} />;
       case 'atlas': return <AtlasChat />;
