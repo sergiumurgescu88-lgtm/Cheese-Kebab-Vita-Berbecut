@@ -493,6 +493,53 @@ async function startServer() {
   });
   // ============ END TICKETS ============
 
+
+  // ============ FUSIONSOLAR MOCK ENDPOINTS ============
+  const fsMockStations = [
+    { plantCode: 'NE-241643342', plantName: 'Căzănești (Ialomița)', capacity: 9.13, lat: 44.55, lon: 27.45, currentPower: 6.8, dailyEnergy: 42.1, monthlyEnergy: 980, status: 'NORMAL', mock: true },
+    { plantCode: 'NE-241643343', plantName: 'Mircea Vodă (Constanța)', capacity: 34, lat: 44.01, lon: 27.98, currentPower: 24.5, dailyEnergy: 156.3, monthlyEnergy: 3620, status: 'NORMAL', mock: true },
+    { plantCode: 'NE-241643344', plantName: 'Babadag (Tulcea)', capacity: 18.27, lat: 44.89, lon: 28.72, currentPower: 0, dailyEnergy: 89.4, monthlyEnergy: 2100, status: 'ALARM', mock: true },
+    { plantCode: 'NE-241643345', plantName: 'Șimleu Silvaniei (Sălaj)', capacity: 48, lat: 47.23, lon: 22.80, currentPower: 31.2, dailyEnergy: 198.7, monthlyEnergy: 4580, status: 'NORMAL', mock: true },
+    { plantCode: 'NE-241643346', plantName: 'Stâlpu (Buzău)', capacity: 5.35, lat: 45.18, lon: 26.97, currentPower: 4.1, dailyEnergy: 26.8, monthlyEnergy: 620, status: 'NORMAL', mock: true },
+  ];
+
+  app.get('/api/fusionsolar/stations', (req: any, res: any) => {
+    const stations = fsMockStations.map(s => ({
+      ...s,
+      currentPower: s.status === 'ALARM' ? 0 : parseFloat((s.capacity * (0.6 + Math.random() * 0.25)).toFixed(2)),
+    }));
+    res.json({ success: true, data: stations });
+  });
+
+  app.get('/api/fusionsolar/realtime/:plantCode', (req: any, res: any) => {
+    const station = fsMockStations.find(s => s.plantCode === req.params.plantCode);
+    if (!station) return res.json({ success: false, data: null });
+    const invertors = Array.from({ length: 6 }, (_, i) => ({
+      sn: `SN-${station.plantCode.slice(-3)}-INV${String(i+1).padStart(2,'0')}`,
+      model: 'SUN2000-100KTL-M2',
+      activePower: station.status === 'ALARM' && i === 2 ? 0 : parseFloat((station.capacity / 6 * (0.85 + Math.random() * 0.12) * 1000).toFixed(1)),
+      efficiency: parseFloat((97.5 + Math.random() * 1.2).toFixed(1)),
+      temperature: parseFloat((42 + Math.random() * 8).toFixed(1)),
+      status: station.status === 'ALARM' && i === 2 ? 'FAULT' : 'RUNNING',
+      alarms: station.status === 'ALARM' && i === 2 ? ['Grid Frequency Abnormal'] : [],
+    }));
+    res.json({ success: true, data: { plant: station, invertors, mock: true, ts: Date.now() } });
+  });
+
+  app.get('/api/fusionsolar/history/:plantCode', (req: any, res: any) => {
+    const station = fsMockStations.find(s => s.plantCode === req.params.plantCode);
+    if (!station) return res.json({ success: false, data: [] });
+    const days = parseInt((req.query as any).days) || 7;
+    const history = Array.from({ length: days }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (days - 1 - i));
+      const dateStr = d.toISOString().slice(0, 10);
+      const energy = parseFloat((station.capacity * 4.5 * (0.8 + Math.random() * 0.3)).toFixed(1));
+      return { date: dateStr, energy, peakPower: parseFloat((station.capacity * 0.92).toFixed(2)), irradiance: parseFloat((4.8 + Math.random() * 1.2).toFixed(2)), pr: parseFloat((82 + Math.random() * 8).toFixed(1)) };
+    });
+    res.json({ success: true, data: history });
+  });
+  // ============ END FUSIONSOLAR ============
+
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'HELIOS Platform Full-Stack' });
   });
