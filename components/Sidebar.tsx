@@ -22,6 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'mercuria', label: 'MERCURIA (Trading)', icon: TrendingUp },
     { id: 'solar-ai', label: 'SolarAI Architect', icon: Bot },
     { id: 'sf-engine', label: 'SF Engine', icon: FileText },
+    { id: 'project-cmd', label: 'Project CMD Center', icon: LayoutDashboard },
     { id: 'epc-tender', label: 'EPC Tender Engine', icon: FileSignature },
     { id: 'helio-sf', label: 'Helio (SF Expert)', icon: FileText },
     { id: 'atlas', label: 'Atlas (Tech Engine)', icon: Cpu },

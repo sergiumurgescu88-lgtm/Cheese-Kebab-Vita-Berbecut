@@ -3,7 +3,8 @@ import {
   FileSignature, ChevronRight, ChevronLeft, Zap, CheckCircle,
   Building2, MapPin, Cpu, Euro, Calendar, Shield, Loader2,
   Copy, Printer, RefreshCw, AlertCircle, TrendingUp, BarChart3,
-  Scale, Wrench
+  ClipboardList, Scale, Wrench, PieChart, FileText, LayoutList,
+  Bolt, HardHat, Terminal
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { callNvidiaAI } from '../services/geminiService';

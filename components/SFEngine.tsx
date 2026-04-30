@@ -29,46 +29,33 @@ const calcProductieAnuala = (putere: number, tarifMwh: number) =>
   putere * 1300 * tarifMwh; // kWh/kWp * MWp * €/MWh ≈ €/an
 
 const calcNPV = (putere: number, tarifMwh: number, durata: number, investitie: number, iradiantaPVGIS: number = 1446, trackerBonus: number = 1.0): number => {
-  const productieNeta = putere * iradiantaPVGIS * 0.890 * trackerBonus;
-  const opexAn1 = putere * 12000;
-  let npv = -investitie;
-  for (let x = 1; x <= durata; x++) {
-    const prod = productieNeta * Math.pow(0.996, x - 1); // degradare TOPCon 0.4%/an
-    const opex = opexAn1 * Math.pow(1.02, x - 1);       // inflatie OpEx 2%/an
-    npv += (prod * tarifMwh - opex) / Math.pow(1.08, x);
-  }
+  const productieNetaP50 = putere * iradiantaPVGIS * 0.890 * trackerBonus;
+  const opex = putere * 12000; // €12k/MW/an consistent cu tabelDCF
+  const cfAn = productieNetaP50 * tarifMwh - opex;
+  let npv = -investitie; // VANF/C pe investitie totala
+  for (let x = 1; x <= durata; x++) npv += cfAn / Math.pow(1.08, x);
   return Math.round(npv);
 };
 
 const calcIRR = (putere: number, tarifMwh: number, investitie: number, iradiantaPVGIS: number = 1446, trackerBonus: number = 1.0): number => {
   if (!investitie) return 0;
-  const productieNeta = putere * iradiantaPVGIS * 0.890 * trackerBonus;
-  const opexAn1 = putere * 12000;
+  const productieNetaP50 = putere * iradiantaPVGIS * 0.890 * trackerBonus;
+  const cfAn = productieNetaP50 * tarifMwh - putere * 12000;
   let lo = 0, hi = 1;
   for (let i = 0; i < 200; i++) {
     const mid = (lo + hi) / 2;
     let npv = -investitie;
-    for (let x = 1; x <= 25; x++) {
-      const prod = productieNeta * Math.pow(0.996, x - 1);
-      const opex = opexAn1 * Math.pow(1.02, x - 1);
-      npv += (prod * tarifMwh - opex) / Math.pow(1 + mid, x);
-    }
+    for (let x = 1; x <= 25; x++) npv += cfAn / Math.pow(1 + mid, x);
     if (npv > 0) lo = mid; else hi = mid;
   }
   return Math.round((lo + hi) * 500) / 10;
 };
 
 const calcPayback = (putere: number, tarifMwh: number, investitie: number, iradiantaPVGIS: number = 1446, trackerBonus: number = 1.0): number => {
-  const productieNeta = putere * iradiantaPVGIS * 0.890 * trackerBonus;
-  const opexAn1 = putere * 12000;
-  let cumul = -investitie;
-  for (let x = 1; x <= 50; x++) {
-    const prod = productieNeta * Math.pow(0.996, x - 1);
-    const opex = opexAn1 * Math.pow(1.02, x - 1);
-    cumul += prod * tarifMwh - opex;
-    if (cumul >= 0) return Math.round(x * 10) / 10;
-  }
-  return 0; // nu se recupereaza in 50 ani
+  const productieNetaP50 = putere * iradiantaPVGIS * 0.890 * trackerBonus;
+  const cf = productieNetaP50 * tarifMwh - putere * 12000;
+  if (!cf) return 0;
+  return Math.round((investitie / cf) * 10) / 10;
 };
 
 // ─── TIPURI ───────────────────────────────────────────────────
@@ -400,7 +387,7 @@ export const SFEngine: React.FC = () => {
   const kb6_legislativ = `ACTE NORMATIVE APLICABILE (din SF-uri reale 2022-2025):
 - HG nr. 907/2016 privind etapele de elaborare și conținutul-cadru al documentațiilor tehnico-economice
 - Legea nr. 123/2012 a energiei electrice și a gazelor naturale, cu modificările ulterioare
-- OUG nr. 94/2021: capacități ≤1 MW nu necesită autorizație înființare, doar notificare operator distribuție
+- OUG-944/2021: capacități ≤1 MW nu necesită autorizație înființare, doar notificare operator distribuție
 - Directiva (UE) 2018/2001 privind promovarea utilizării energiei din surse regenerabile (obiectiv 40% RES până în 2030)
 - Regulamentul (UE) 2021/1119 — Legea europeană a climei: neutralitate climatică 2050, reducere 55% emisii față de 1990 până în 2030
 - Directiva (UE) 2019/944 privind normele comune pentru piața internă de energie electrică
@@ -413,7 +400,7 @@ export const SFEngine: React.FC = () => {
 
   const kb7_financiar = `METODOLOGIE ANALIZĂ FINANCIARĂ (model din SF-uri reale PHY GEO 2024, UPIT 2025, WTB 2022):
 Metoda: flux net de numerar actualizat (DCF), metoda incrementală exclusiv pentru proiect.
-Perioadă referință: 25 ani operare + 1 an implementare = 26 ani total.
+Perioadă referință: 20 ani operare + 1 an implementare = 21 ani total.
 Valoare reziduală: amortizare liniară — durata de viață echipamente 25 ani, referință 20 ani → reziduală 20% din investiție.
 Fluxurile non-monetare (amortizare, subvenții) nu se includ în FCF.
 
@@ -513,7 +500,7 @@ AVIZE NECESARE:
 - Aviz Tehnic de Racordare (ATR): operator distribuție județean conform Ord. ANRE nr. 59/2013
 - Contor bidirecțional smart meter: instalat de operator distribuție după PIF
 - Protecții anti-ilotare: obligatorii conform normelor ANRE
-- Notificare ANRE + operator distribuție: conform OUG nr. 94/2021 (capacități ≤1 MW — notificare, NU autorizație)
+- Notificare ANRE + operator distribuție: conform OUG-944/2021 (capacități ≤1 MW — notificare, NU autorizație)
 - Autorizație înființare ANRE: obligatorie DOAR pentru capacități >1 MW
 - Studiu geotehnic: obligatoriu pentru fundații la sol; nu este cazul pentru acoperiș
 - Categoria geotehnică C1 RISC REDUS conform NP 074-2014 (referință SF PHY GEO 2024, Șomcuta Mare: ag=0.15g, Tc=0.7s)`;
@@ -662,7 +649,7 @@ CAPITOLUL 3. IDENTIFICAREA ȘI PREZENTAREA SCENARIILOR/OPȚIUNILOR TEHNICO-ECONO
 3.1 Scenariul 1 — Soluția propusă: ${formData.tipPanou} + ${formData.tracker}${formData.bess !== 'Nu' ? ` + BESS ${formData.bess}` : ''}
 3.1.1 Particularități ale amplasamentului — coordonate GPS: ${formData.gps}, altitudine: ${solarData?.elevation ?? 'N/A'}m, iradianță PVGIS: ${solarData?.irradiance ?? 'N/A'} kWh/m²/an, AQI: ${aqiData?.aqi ?? 'N/A'}
 3.1.2 Descrierea tehnică — panouri ${formData.tipPanou}, invertor ${formData.tipInvertor}, structuri ${formData.tracker}${formData.bess !== 'Nu' ? `, BESS ${formData.bess}` : ''}, sistem evacuare MT, SCADA${formData.fpv !== 'Nu' ? `, sistem FPV plutitor` : ''}
-3.1.3 Costurile estimative — deviz HG907 pe categorii: C1 teren 1%, C2 utilități 3%, C3 proiectare 4%, C4.1 echipamente 67%, C4.2 montaj 20%, C5 șantier 2.5%, C6 neprevăzute 2.5%. Total fără TVA: ${parseInt(formData.valoareInvestitie || '0').toLocaleString()} EUR. Tabelul deviz este generat în instrucțiunile Capitolului 3. NU regenera, NU reproduce și NU menționa alt tabel deviz în Capitolele 4, 5, 7 sau 8.
+3.1.3 Costurile estimative — deviz HG907 pe categorii: C1 teren 1%, C2 utilități 3%, C3 proiectare 4%, C4.1 echipamente 67%, C4.2 montaj 20%, C5 șantier 2.5%, C6 neprevăzute 2.5%. Total fără TVA: ${parseInt(formData.valoareInvestitie || '0').toLocaleString()} EUR. REPRODUCE TABELUL EXACT din secțiunea 3.1.3, NU recalcula procentele.
 3.1.4 Studii de specialitate necesare — topografic, geotehnic, hidrologic, electromagnetic
 3.1.5 Grafic orientativ realizare — proiectare (L1-L3), avizare (L4-L9), construcție (L10-L20), PIF (L21-L24)
 3.2 Scenariul 0 — Situația de referință (fără investiție) — menținerea consumului din rețea, costuri oportunitate, impact mediu
@@ -713,7 +700,7 @@ CAPITOLUL 7. IMPLEMENTAREA INVESTIȚIEI
 
 CAPITOLUL 8. CONCLUZII ȘI RECOMANDĂRI
 
-8.1 Sinteza viabilității tehnice — producție garantabilă P50 NET: ${productieP50.toLocaleString()} MWh/an (referință brută PVGIS: ${solarData?.productie?.toLocaleString() ?? 'N/A'} MWh/an înainte de pierderi — NU folosi valoarea brută ca producție netă)
+8.1 Sinteza viabilității tehnice — producție garantabilă: ${solarData ? `${solarData.productie.toLocaleString()} MWh/an` : 'conform PVGIS'}
 8.2 Sinteza viabilității financiare — NPV = ${npv.toLocaleString()} EUR, IRR = ${irr}%, Payback = ${payback} ani
 8.3 Recomandare generală — VIABIL / CONDIȚIONAT VIABIL / NEVIABIL cu justificare completă
 8.4 Pași următori — studii teren, ATR, PPA, depunere cerere finanțare
@@ -792,7 +779,7 @@ INSTRUCȚIUNI STIL:
 
     const baseContext = buildPrompt().split('STRUCTURA OBLIGATORIE')[0];
     const putere = parseFloat(formData.putere || '0');
-    const durata = formData.durataConcesiune || '25';
+    const durata = formData.durata || '25';
     const grantPerMw = putere > 0 ? Math.round(parseInt(formData.grantSolicitat||'0')/putere/1000) : 0;
     const iradiantaReala = solarData?.irradiance ?? 1446;
     const aqiValDCF = aqiData?.aqi ?? 50;
@@ -811,7 +798,6 @@ INSTRUCȚIUNI STIL:
     const dcfRows: string[] = [];
     dcfRows.push('| An | Producție (MWh) | Venituri PPA (€) | OpEx (€) | EBITDA (€) | FCF (€) | Factor 8% | FCF Actualizat (€) | FCF Cumulat (€) |');
     dcfRows.push('|---|---|---|---|---|---|---|---|---|');
-    dcfRows.push(`| 0 | 0 | 0 | 0 | 0 | ${(-capEx).toLocaleString()} | 1.0000 | ${(-capEx).toLocaleString()} | ${(-capEx).toLocaleString()} |`);
     const investitieTotal = parseInt(formData.valoareInvestitie||'0');
     let fcfCumulat = -capEx; // FIX: porneste din capEx net (investitie - grant) pentru NPV corect
     let fcfCumulatAn1 = 0;
@@ -895,7 +881,7 @@ Justifică comasarea fazelor conform HG 907/2016 art.7. Prezintă concluziile te
 2.2 Prezentarea contextului actual — cadru legislativ
 Lista completă acte normative aplicabile (fiecare pe rând nou cu "- "):
 Directive UE: RED II 2018/2001, Fit for 55, European Climate Law 2021/1119, DNSH 2020/852, Directiva 2019/944.
-Legi naționale: HG 907/2016, Legea 123/2012, OUG 94/2021, Legea 220/2008, HG 1076/2021 PNIESC, OUG 60/2022.
+Legi naționale: HG 907/2016, Legea 123/2012, OUG 944/2021, Legea 220/2008, HG 1076/2021 PNIESC, OUG 60/2022.
 Analiză piața energiei România 2025-2026: prețuri OPCOM, pondere RES, deficit capacitate.
 
 2.3 Analiza situației existente
@@ -923,21 +909,20 @@ BILANȚ ENERGETIC COMPLET — REPRODUCE TABELUL EXACT:
 ${tabelBilant}
 Comentează fiecare etapă de pierdere, justifică valorile tehnic, prezintă P50 vs P90 și implicațiile pentru bancabilitate.
 3.1.2 Descrierea tehnică constructivă detaliată — prezintă fișe tehnice complete pentru: panouri ${formData.tipPanou} (eficiență, putere, garanție, certificări, producători), invertoare ${formData.tipInvertor} (topologie, randament, protecții), structuri ${formData.tracker} (material, rezistență vânt max ${climateData?.windMaxAbsolut ?? 150} km/h conform date reale OpenMeteo, sarcini zăpadă ${climateData?.zileZapadaAn ?? 20} zile/an, fundații)${formData.bess !== "Nu" ? ", BESS " + formData.bess + " (chimie LFP, cicluri, BMS, aplicații)" : ""}, sistem SCADA (monitorizare string-level, alertare, dashboard, securitate VPN).
-3.1.3 Deviz general conform HG 907/2016.
+3.1.3 Deviz general conform HG 907/2016 — REPRODUCE TABELUL EXACT:
 ${(() => {
   const inv = parseInt(formData.valoareInvestitie||'0');
-  const c1 = Math.round(inv * 0.010);
-  const c2 = Math.round(inv * 0.030);
-  const c3 = Math.round(inv * 0.040);
-  const c4echip = Math.round(inv * 0.670);
-  const c4montaj = Math.round(inv * 0.200);
-  const c5 = Math.round(inv * 0.025);
-  const c6 = Math.round(inv * 0.025);
+  const c1 = Math.round(inv * 0.010); // C1 obtinere+amenajare teren 1%
+  const c2 = Math.round(inv * 0.030); // C2 asigurare utilitati 3%
+  const c3 = Math.round(inv * 0.040); // C3 proiectare+asistenta tehnica 4%
+  const c4echip = Math.round(inv * 0.670); // C4.1 echipamente 67% (total 100%)
+  const c4montaj = Math.round(inv * 0.200); // C4.2 montaj+racordare 20%
+  const c5 = Math.round(inv * 0.025); // C5 organizare santier 2.5%
+  const c6 = Math.round(inv * 0.025); // C6 diverse+neprevazute max 10% HG907
   const c4total = c4echip + c4montaj;
   const totalFaraTVA = c1+c2+c3+c4total+c5+c6;
   const tva = Math.round(totalFaraTVA * 0.19);
-  const valoriFixe = `VALORI FIXE OBLIGATORII — FOLOSESTE DOAR ACESTE NUMERE, NU RECALCULA: C1=${c1.toLocaleString()} EUR (1%), C2=${c2.toLocaleString()} EUR (3%), C3=${c3.toLocaleString()} EUR (4%), C4.1=${c4echip.toLocaleString()} EUR (67%), C4.2=${c4montaj.toLocaleString()} EUR (20%), C5=${c5.toLocaleString()} EUR (2.5%), C6=${c6.toLocaleString()} EUR (2.5%), TOTAL fara TVA=${totalFaraTVA.toLocaleString()} EUR, TVA=${tva.toLocaleString()} EUR, TOTAL cu TVA=${(totalFaraTVA+tva).toLocaleString()} EUR.`;
-  const rows = [valoriFixe, 'REPRODUCE TABELUL EXACT:',
+  const rows = [
     '| Capitol | Denumire | Valoare (EUR) | % din total |',
     '|---|---|---|---|',
     `| C1 | Cheltuieli pentru obținerea și amenajarea terenului | ${c1.toLocaleString()} | 1% |`,
@@ -986,7 +971,7 @@ Grant ${formData.tipFinantare}: ${parseInt(formData.grantSolicitat||'0').toLocal
 LCOE = ${lcoe} EUR/MWh — FOLOSEȘTE EXCLUSIV această valoare precalculată. NU recalcula, NU modifica, NU folosi altă formulă. Formula reală: (InvestițieTotală + OpEx25ani) / Producție25ani = ${lcoe} EUR/MWh.
 DSCR mediu = EBITDA / serviciul datoriei — prezintă per an în tabel separat
 
-TABEL FLUX NUMERAR DCF ${durata} ANI — FOLOSESTE EXACT tabelul de mai jos, NU regenera, NU adauga rand An 0, NU modifica nicio valoare:
+TABEL FLUX NUMERAR DCF ${durata} ANI (REPRODUCE EXACT — NU REGENERA, NU MODIFICA NICIO VALOARE):
 VALOARI CONTROL: FCF Cumulat An 1 = ${fcfCumulatAn1.toLocaleString()} EUR | CapEx NET (investiție-grant) = ${capEx.toLocaleString()} EUR
 ${tabelDCF}
 
@@ -1114,28 +1099,7 @@ Fiecare subcapitol minim 400 cuvinte.` }
 
         const result = await callAI(capPrompt, cap.nr);
         if (result) {
-          // Previne titluri duble: AI poate scrie și el 'CAPITOLUL X. ...'
-          let cleanResult = result.replace(/^CAPITOLUL\s+\d+[.:]?[^\n]*\n+/i, '').trim();
-          // POST-PROCESARE Cap 3: inlocuim valorile deviz generate gresit de AI
-          if (cap.nr === 3 || cap.nr === '3' || String(cap.nr) === '3') {
-            const inv = parseInt(formData.valoareInvestitie || '0');
-            const correctC4 = Math.round(inv * 0.670);
-            const wrongC4 = Math.round(inv * 0.620);
-            const correctC4Str = correctC4.toLocaleString('en-US');
-            const wrongC4Str = wrongC4.toLocaleString('en-US');
-            // Simplu si sigur: replace direct string
-            while (cleanResult.includes(wrongC4Str)) {
-              cleanResult = cleanResult.split(wrongC4Str).join(correctC4Str);
-            }
-            cleanResult = cleanResult.split('| 62% |').join('| 67% |');
-            cleanResult = cleanResult.split('/ 62%').join('/ 67%');
-            cleanResult = cleanResult.split('(62%)').join('(67%)');
-            cleanResult = cleanResult.split(' 62% ').join(' 67% ');
-            cleanResult = cleanResult.split('62%)').join('67%)');
-            cleanResult = cleanResult.split('62% din').join('67% din');
-            cleanResult = cleanResult.split('de 62%').join('de 67%');
-          }
-          fullSF += '\n\nCAPITOLUL ' + cap.nr + '. ' + cap.titlu + '\n\n' + cleanResult;
+          fullSF += '\n\nCAPITOLUL ' + cap.nr + '. ' + cap.titlu + '\n\n' + result;
           setSfOutput(fullSF.trim());
           if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
         }
