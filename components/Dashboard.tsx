@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Zap, MapPin, CheckCircle, Clock, Factory, Users, TrendingUp, ChevronRight } from 'lucide-react';
+import { Zap, MapPin, CheckCircle, Clock, Factory, Users, TrendingUp, ChevronRight, X, Activity } from 'lucide-react';
 
 const proiecteActive = [
   { nume: 'Căzănești', mw: 9.13, judet: 'Ialomița', progres: 72, status: 'Construcție', culoare: 'amber' },
@@ -84,6 +84,34 @@ const useFusionSolarSummary = () => {
 };
 
 export const Dashboard: React.FC = () => {
+  const [diagModal, setDiagModal] = useState(false);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagResult, setDiagResult] = useState<{status:string,probleme:string[],actiune:string}|null>(null);
+
+  const runDiagnostic = async (stations: any[]) => {
+    setDiagModal(true);
+    setDiagLoading(true);
+    setDiagResult(null);
+    try {
+      const summary = stations.map((s:any) => `${s.plantName}: ${s.currentPower.toFixed(1)}MW / ${s.capacity}MWp (${s.status})`).join('\n');
+      const res = await fetch('/api/ai/scada', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: 'Ești un expert în monitorizare parcuri fotovoltaice. Răspunde DOAR cu JSON valid, fără markdown.',
+          messages: [{ role: 'user', content: `Analizează datele parcurilor FV din ultimele 24h și returnează un JSON cu exact această structură: {"status":"OK|WARNING|CRITICAL","probleme":["problema1","problema2","problema3"],"actiune":"actiunea recomandata"}\n\nDate parcuri:\n${summary}` }]
+        })
+      });
+      const data = await res.json();
+      const clean = data.text.replace(/```json|```/g, '').trim();
+      setDiagResult(JSON.parse(clean));
+    } catch(e) {
+      setDiagResult({ status: 'WARNING', probleme: ['Eroare la analiza AI', 'Verificați conexiunea', 'Reîncercați'], actiune: 'Contactați suportul tehnic' });
+    } finally {
+      setDiagLoading(false);
+    }
+  };
+
   const [tabActiv, setTabActiv] = useState<'active'|'finalizate'>('active');
 
   return (
@@ -138,6 +166,12 @@ export const Dashboard: React.FC = () => {
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse inline-block" /> FusionSolar Live · {fsStations.length} parcuri
               </h3>
               {alarms > 0 && <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">{alarms} alarme</span>}
+              <button
+                onClick={() => runDiagnostic(fsStations)}
+                className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all"
+              >
+                <Activity className="w-3 h-3" /> Diagnostic Rapid
+              </button>
             </div>
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="bg-slate-800/50 rounded-xl p-3 text-center">
@@ -287,6 +321,51 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* F05 — Fast Diagnostic Modal */}
+      {diagModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-amber-400" /> Diagnostic Rapid AI
+              </h3>
+              <button onClick={() => setDiagModal(false)} className="text-slate-500 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {diagLoading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-slate-400 text-xs">Gemini analizează datele...</p>
+              </div>
+            ) : diagResult ? (
+              <div className="space-y-4">
+                <div className={`rounded-xl p-3 text-center font-black text-sm tracking-widest uppercase ${
+                  diagResult.status === 'OK' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  diagResult.status === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                  'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                }`}>
+                  {diagResult.status === 'OK' ? '✓ ' : diagResult.status === 'CRITICAL' ? '✗ ' : '⚠ '}{diagResult.status}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Top Probleme Detectate</p>
+                  {diagResult.probleme.map((p, i) => (
+                    <div key={i} className="flex items-start gap-2 bg-slate-800/50 rounded-lg p-2.5">
+                      <span className="text-amber-500 font-bold text-xs mt-0.5">{i+1}.</span>
+                      <span className="text-xs text-slate-300">{p}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-3">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">Acțiune Recomandată</p>
+                  <p className="text-xs text-emerald-300">{diagResult.actiune}</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {/* Footer info */}
       <div className="flex items-center gap-2 text-slate-600 text-[10px]">
