@@ -5,6 +5,10 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import fs from "fs";
+const TICKETS_FILE = '/tmp/helios_tickets.json';
+const TG_TOKEN = '8318347456:AAGRdwa0Z7Tvhp2lzovO-C-WvnZoAq_b4DU';
+const TG_CHAT = '7758960424';
 
 dotenv.config();
 
@@ -13,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = parseInt(process.env.PORT || '3001');
+  const PORT = parseInt(process.env.PORT || '3000');
 
   app.use(cors());
   app.use(express.json());
@@ -186,7 +190,7 @@ async function startServer() {
     const { messages, systemInstruction } = req.body;
     try {
       const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-        model: 'google/gemini-2.5-flash-preview',
+        model: 'google/gemini-2.5-flash',
         messages: [
           ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
           ...messages
@@ -290,6 +294,98 @@ async function startServer() {
   app.get('/api/places', async (req, res) => {
     res.json({ results: [] });
   });
+
+
+  // ============ TICKETS SYSTEM + TELEGRAM ============
+
+  function loadTickets() {
+    try { return JSON.parse(fs.readFileSync(TICKETS_FILE, 'utf-8')); } catch { return []; }
+  }
+  function saveTickets(t: any[]) {
+    fs.writeFileSync(TICKETS_FILE, JSON.stringify(t, null, 2));
+  }
+  async function sendTelegram(msg: string) {
+    try {
+      await axios.post(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        chat_id: TG_CHAT, text: msg, parse_mode: 'HTML'
+      });
+    } catch(e) { console.error('Telegram error:', e); }
+  }
+
+  app.get('/api/tickets', (req, res) => {
+    res.json(loadTickets());
+  });
+
+  app.post('/api/tickets', async (req, res) => {
+    const tickets = loadTickets();
+    const t = {
+      id: 'TK-' + Date.now(),
+      site: req.body.site,
+      severitate: req.body.severitate,
+      problema: req.body.problema,
+      cauza: req.body.cauza,
+      actiune: req.body.actiune,
+      timestamp: new Date().toISOString(),
+      status: 'DESCHIS'
+    };
+    tickets.unshift(t);
+    saveTickets(tickets);
+    if (t.severitate === 'critica') {
+      const msg = `🚨 <b>HELIOS ALERT — TICHET CRITIC</b>\n\n` +
+        `📍 <b>Site:</b> ${t.site}\n` +
+        `⚠️ <b>Problemă:</b> ${t.problema}\n` +
+        `🔍 <b>Cauză:</b> ${t.cauza}\n` +
+        `✅ <b>Acțiune:</b> ${t.actiune}\n` +
+        `🕐 <b>Timp:</b> ${new Date().toLocaleString('ro-RO')}\n` +
+        `🆔 <b>ID:</b> ${t.id}\n\n` +
+        `🔗 https://scada.sergiu.online`;
+      await sendTelegram(msg);
+    }
+    res.json(t);
+  });
+
+  app.patch('/api/tickets/:id', (req, res) => {
+    const tickets = loadTickets();
+    const idx = tickets.findIndex((t: any) => t.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'not found' });
+    tickets[idx].status = req.body.status;
+    tickets[idx].updatedAt = new Date().toISOString();
+    saveTickets(tickets);
+    res.json(tickets[idx]);
+  });
+
+  app.post('/api/tickets/telegram', async (req, res) => {
+    const tickets = loadTickets();
+    const t = tickets.find((x: any) => x.id === req.body.id);
+    if (!t) return res.status(404).json({ error: 'not found' });
+    const sevIcon = t.severitate==='critica'?'🚨':t.severitate==='medie'?'🟡':'🟢';
+    const statIcon = t.status==='REZOLVAT'?'✅':t.status==='IN_LUCRU'?'⚙️':'📂';
+    const msg = `${sevIcon} <b>HELIOS TICHET — ${t.severitate.toUpperCase()}</b>\n\n` +
+      `📍 <b>Site:</b> ${t.site}\n` +
+      `⚠️ <b>Problemă:</b> ${t.problema}\n` +
+      `🔍 <b>Cauză:</b> ${t.cauza}\n` +
+      `✅ <b>Acțiune:</b> ${t.actiune}\n` +
+      `${statIcon} <b>Status:</b> ${t.status}\n` +
+      `🕐 <b>Creat:</b> ${new Date(t.timestamp).toLocaleString('ro-RO')}\n` +
+      `🆔 <b>ID:</b> ${t.id}\n\n` +
+      `🔗 https://scada.sergiu.online`;
+    try {
+      await axios.post(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        chat_id: TG_CHAT, text: msg, parse_mode: 'HTML'
+      });
+      res.json({ ok: true });
+    } catch(e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/tickets/:id', (req, res) => {
+    let tickets = loadTickets();
+    tickets = tickets.filter((t: any) => t.id !== req.params.id);
+    saveTickets(tickets);
+    res.json({ ok: true });
+  });
+  // ============ END TICKETS ============
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'HELIOS Platform Full-Stack' });
