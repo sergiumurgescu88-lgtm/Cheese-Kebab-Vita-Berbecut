@@ -54,6 +54,7 @@ const App: React.FC = () => {
       case 'atlas': return <AtlasChat />;
       case 'settings': return <SettingsSection />;
       case 'financial': return <FinancialReporting />;
+      case 'climate': return <ClimateRisk />;
       case 'weather': return <WeatherForecast />;
       case 'fusionsolar': return <FusionSolarDashboard />;
       case 'live-dashboard': return <LiveDashboard />;

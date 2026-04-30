@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature, ScanSearch, ExternalLink, Globe, Radio } from 'lucide-react';
+import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature, ScanSearch, ExternalLink, Globe, Radio, Shield } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'fusionsolar',    label: 'FusionSolar Live',     icon: Sun },
     { id: 'weather',        label: 'Weather Forecast',     icon: CloudSun },
     { id: 'financial',      label: 'Raportare Financiară', icon: TrendingUp },
+    { id: 'climate',        label: 'Risc Climatic',        icon: Shield },
     { id: 'omni-scada',     label: 'OMNI-SCADA',           icon: Activity },
     { id: 'volta',          label: 'VOLTA (Master PPC)',   icon: Zap },
     { id: 'mercuria',       label: 'MERCURIA (Trading)',   icon: TrendingUp },
