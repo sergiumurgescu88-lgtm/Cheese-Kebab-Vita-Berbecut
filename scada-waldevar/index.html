@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WALDEVAR — SCADA Enterprise</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#020617;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;min-height:100vh;}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;}
+  .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+  .btn-amber{background:#f59e0b;color:#000;}
+  .btn-amber:hover{background:#fbbf24;}
+  .btn-slate{background:#334155;color:#e2e8f0;}
+  .btn-slate:hover{background:#475569;}
+  .btn-red{background:#ef4444;color:#fff;}
+  .tab-btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;background:#1e293b;color:#94a3b8;transition:all .2s;}
+  .tab-btn.active{background:#f59e0b;color:#000;font-weight:700;}
+  .spinner{display:inline-block;width:10px;height:10px;border:2px solid #334155;border-top-color:#f59e0b;border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .badge-critic{background:#7f1d1d;color:#fca5a5;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+  .badge-medie{background:#78350f;color:#fcd34d;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+  .badge-ok{background:#064e3b;color:#6ee7b7;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+  .anomaly-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px;margin-bottom:10px;}
+  .anomaly-card.critic{border-left:4px solid #ef4444;}
+  .anomaly-card.medie{border-left:4px solid #f59e0b;}
+  .anomaly-card.ok{border-left:4px solid #10b981;}
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:#0f172a;}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px;}
+  .leaflet-container{background:#020617 !important;}
+  #tg-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;}
+  #tg-modal.show{display:flex;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span style="color:#f59e0b;font-size:20px;font-weight:800;">⚡ WALDEVAR</span>
+    <span style="color:#475569;font-size:13px;">SCADA Enterprise — AI Powered</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="btn btn-slate" onclick="genRaportPDF()">📄 Raport PDF</button>
+    <button class="btn btn-slate" onclick="document.getElementById('tg-modal').classList.add('show')">🔔 Test Alertă</button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+      <span style="color:#10b981;font-size:13px;font-weight:600;">LIVE</span>
+    </div>
+    <span id="clock" style="color:#64748b;font-size:12px;"></span>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:16px 24px;">
+  <div class="card" style="padding:16px;">
+    <div id="kpi-cap" style="font-size:24px;font-weight:800;color:#f59e0b;">901.7 MW</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">Capacitate Totală</div>
+  </div>
+  <div class="card" style="padding:16px;">
+    <div id="kpi-prod" style="font-size:24px;font-weight:800;color:#34d399;">0 MW</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">MW Producție Acum</div>
+  </div>
+  <div class="card" style="padding:16px;">
+    <div id="kpi-mwh" style="font-size:24px;font-weight:800;color:#818cf8;">0 MWh</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">MWh Produs Azi</div>
+  </div>
+  <div class="card" style="padding:16px;">
+    <div id="kpi-eur" style="font-size:24px;font-weight:800;color:#c084fc;">0 €</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">Venituri Azi (EUR)</div>
+  </div>
+  <div class="card" style="padding:16px;">
+    <div id="kpi-co2" style="font-size:24px;font-weight:800;color:#fb923c;">0 t</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">CO₂ Evitat (t)</div>
+  </div>
+  <div class="card" style="padding:16px;">
+    <div id="kpi-anom" style="font-size:24px;font-weight:800;color:#f87171;">0</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">Anomalii Active</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div style="padding:0 24px;display:flex;gap:4px;margin-bottom:16px;">
+  <button class="tab-btn active" onclick="showTab('globe',this)">🗺 Harta Live</button>
+  <button class="tab-btn" onclick="showTab('anomalii',this)">🤖 AI Anomalii</button>
+  <button class="tab-btn" onclick="showTab('twin',this)">📊 Digital Twin</button>
+  <button class="tab-btn" onclick="showTab('predictie',this)">📈 Predicție 7 Zile</button>
+  <button class="tab-btn" onclick="showTab('benchmark',this)">🏆 Benchmark</button>
+  <button class="tab-btn" onclick="showTab('sites',this)">📋 Toate Siturile</button>
+  <button class="tab-btn" onclick="showTab('tichete',this)">🎫 Tichete</button>
+</div>
+
+<!-- TAB: HARTA LIVE -->
+<div id="tab-globe" style="padding:0 24px 24px;display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start;">
+  <div class="card" style="padding:20px;">
+    <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:12px;">🌍 HARTA LIVE — PARCURI WALDEVAR</div>
+    <div id="map" style="height:520px;width:100%;border-radius:8px;"></div>
+    <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;">
+      <span style="font-size:11px;color:#64748b;">🟡 Operațional &nbsp; 🟢 Finalizat &nbsp; 🔵 Construcție</span>
+      <span style="font-size:11px;color:#475569;">Scroll=zoom | Drag=pan</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card" style="padding:20px;">
+      <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:12px;">🌤 WEATHER LIVE — PER PARC</div>
+      <div id="weather-list" style="max-height:300px;overflow-y:auto;">
+        <div style="color:#64748b;font-size:12px;">Se încarcă date meteo...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRAFIC PRODUCTIE FULL WIDTH -->
+<div style="padding:0 24px 24px;" id="prod-chart-section">
+  <div class="card" style="padding:20px;">
+    <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:16px;">⚡ PRODUCTIE LIVE — AZI — TOATE PARCURILE</div>
+    <canvas id="prod-chart" height="80"></canvas>
+  </div>
+</div>
+
+<!-- TAB: ANOMALII -->
+<div id="tab-anomalii" style="display:none;padding:0 24px 24px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#e2e8f0;">🤖 AI Anomaly Detection</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">Gemini 2.5 Flash — analiză în timp real</div>
+    </div>
+    <button class="btn btn-amber" onclick="runAnomalyAI()">▶ Rulează Analiza AI</button>
+  </div>
+  <div id="anomaly-explain" style="color:#64748b;font-size:13px;margin-bottom:16px;">Apasă butonul pentru a rula analiza AI pe toate parcurile operaționale.</div>
+  <div id="anomaly-list"></div>
+</div>
+
+<!-- TAB: DIGITAL TWIN -->
+<div id="tab-twin" style="display:none;padding:0 24px 24px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#e2e8f0;">🔬 Digital Twin — Simulare Fizică</div>
+        <select id="twin-site" style="background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:6px 10px;font-size:12px;" onchange="runDigitalTwin()">
+        </select>
+      </div>
+      <div id="twin-result" style="color:#64748b;font-size:13px;">Selectează un parc pentru simulare.</div>
+    </div>
+    <div class="card" style="padding:20px;">
+      <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:16px;">📊 Comparație Fizic vs. Real</div>
+      <canvas id="twin-chart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: PREDICTIE -->
+<div id="tab-predictie" style="display:none;padding:0 24px 24px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#e2e8f0;">📈 Predicție 7 Zile</div>
+        <button class="btn btn-amber" onclick="runPredictie()">▶ Generează</button>
+      </div>
+      <div style="font-size:11px;color:#475569;margin-bottom:12px;">
+        Predicția combina prognoza meteo Open-Meteo cu modelul de piata MERCURIA pentru a estima veniturile viitoare.
+      </div>
+      <div id="pred-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px;"></div>
+      <div id="pred-explain" style="color:#64748b;font-size:12px;"></div>
+    </div>
+    <div class="card" style="padding:20px;">
+      <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:16px;">💰 Prognoză Venituri</div>
+      <canvas id="pred-chart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: BENCHMARK -->
+<div id="tab-benchmark" style="display:none;padding:0 24px 24px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#e2e8f0;">🏆 Benchmark Parcuri</div>
+        <button class="btn btn-amber" onclick="runBenchmark()">▶ Calculează</button>
+      </div>
+      <canvas id="bench-chart" height="300"></canvas>
+    </div>
+    <div class="card" style="padding:20px;">
+      <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:16px;">📊 Top 5 Performeri</div>
+      <div id="bench-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: TOATE SITURILE -->
+<div id="tab-sites" style="display:none;padding:0 24px 24px;">
+  <div class="card" style="padding:20px;">
+    <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:16px;">📋 Toate Siturile Waldevar</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid #334155;">
+            <th style="text-align:left;padding:10px;color:#64748b;">Parc</th>
+            <th style="text-align:left;padding:10px;color:#64748b;">Județ</th>
+            <th style="text-align:right;padding:10px;color:#64748b;">MWp</th>
+            <th style="text-align:right;padding:10px;color:#64748b;">MW Live</th>
+            <th style="text-align:right;padding:10px;color:#64748b;">PR %</th>
+            <th style="text-align:right;padding:10px;color:#64748b;">Iradiere</th>
+            <th style="text-align:center;padding:10px;color:#64748b;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="sites-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: TICHETE -->
+<div id="tab-tichete" style="display:none;padding:0 24px 24px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#e2e8f0;">🎫 Sistem Tichete</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">Gestionare incidente și intervenții</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn btn-amber" onclick="loadTichete()">🔄 Refresh</button>
+    </div>
+  </div>
+  <div id="tichete-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;"></div>
+  <div id="tichete-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+</div>
+
+<!-- TELEGRAM MODAL -->
+<div id="tg-modal">
+  <div class="card" style="padding:24px;width:400px;">
+    <div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:16px;">📤 Test Alertă Telegram</div>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:20px;">Trimite un mesaj de test pe @HeliosbySergiubot</div>
+    <div id="tg-result" style="font-size:13px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-amber" style="flex:1;" onclick="confirmTelegram()">Trimite Test</button>
+      <button class="btn btn-slate" style="flex:1;" onclick="document.getElementById('tg-modal').classList.remove('show')">Anuleaza</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== SITES DATA =====
+const SITES = [
+  { name:'Kinisi', judet:'Grecia', mwp:130.1, lat:41.12, lon:24.88, status:'operational' },
+  { name:'Satu Mare', judet:'Satu Mare', mwp:49.9, lat:47.79, lon:22.88, status:'operational' },
+  { name:'Mihaile\u0219ti', judet:'Giurgiu', mwp:34.5, lat:44.33, lon:25.95, status:'operational' },
+  { name:'Calug\u0103reni', judet:'Giurgiu', mwp:19.8, lat:44.17, lon:25.98, status:'operational' },
+  { name:'Petershagen', judet:'Germania', mwp:74.2, lat:52.38, lon:8.97, status:'operational' },
+  { name:'Alexandria', judet:'Teleorman', mwp:9.9, lat:43.97, lon:25.33, status:'operational' },
+  { name:'Albina', judet:'Timi\u0219', mwp:48.7, lat:45.83, lon:21.25, status:'operational' },
+  { name:'Iancu Jianu', judet:'OLT', mwp:7.9, lat:44.37, lon:24.23, status:'operational' },
+  { name:'Filia\u0219i', judet:'Dolj', mwp:9.9, lat:44.54, lon:23.52, status:'operational' },
+  { name:'Roata de Jos', judet:'Dolj', mwp:9.8, lat:44.06, lon:25.88, status:'operational' },
+  { name:'Alexandria 2', judet:'Teleorman', mwp:9.9, lat:43.98, lon:25.35, status:'operational' },
+  { name:'Topoloveni', judet:'Arge\u0219', mwp:9.7, lat:44.82, lon:24.88, status:'operational' },
+  { name:'Baba Ana', judet:'Prahova', mwp:9.8, lat:44.92, lon:26.33, status:'operational' },
+  { name:'Balte\u0219ti', judet:'Prahova', mwp:9.9, lat:44.95, lon:26.28, status:'operational' },
+  { name:'Olteni\u021ba', judet:'C\u0103l\u0103ra\u0219i', mwp:9.8, lat:44.08, lon:26.63, status:'operational' },
+  { name:'C\u0103l\u0103ra\u0219i', judet:'Ialomi\u021ba', mwp:9.9, lat:44.20, lon:27.33, status:'operational' },
+  { name:'Lipova 2', judet:'Arad', mwp:49.8, lat:46.09, lon:21.70, status:'operational' },
+  { name:'Prundu B\u00e2rg\u0103ului', judet:'Bistri\u021ba', mwp:9.8, lat:47.12, lon:24.68, status:'operational' },
+  { name:'Bobice\u0219ti', judet:'OLT', mwp:9.9, lat:44.41, lon:24.28, status:'operational' },
+  { name:'\u0218u\u0219eni', judet:'Mure\u0219', mwp:9.8, lat:46.52, lon:24.58, status:'operational' },
+  { name:'Ple\u0219oi', judet:'Dolj', mwp:9.9, lat:44.42, lon:23.78, status:'operational' },
+  { name:'Lipova 3', judet:'Arad', mwp:49.9, lat:46.10, lon:21.72, status:'operational' },
+  { name:'Gr\u0103dinari', judet:'OLT', mwp:9.8, lat:44.25, lon:24.18, status:'operational' },
+  { name:'Ro\u0219iorii de Vede', judet:'Teleorman', mwp:9.9, lat:44.10, lon:24.98, status:'operational' },
+  { name:'Bordu\u0219ani', judet:'Ialomi\u021ba', mwp:9.8, lat:44.48, lon:27.35, status:'operational' },
+  { name:'Dr\u0103g\u0103ne\u0219ti Vla\u0219ca', judet:'Teleorman', mwp:9.9, lat:44.05, lon:25.50, status:'operational' },
+  { name:'Sadova', judet:'Dolj', mwp:9.8, lat:44.02, lon:23.85, status:'operational' },
+  { name:'Miercurea Sibiului', judet:'Sibiu', mwp:49.8, lat:45.88, lon:23.98, status:'operational' },
+  { name:'Dobre\u0219ti', judet:'Dolj', mwp:9.9, lat:44.35, lon:23.98, status:'operational' },
+  { name:'Lipova 1', judet:'Arad', mwp:49.7, lat:46.08, lon:21.68, status:'operational' },
+  { name:'Oradea', judet:'Bihor', mwp:49.9, lat:47.07, lon:21.93, status:'operational' },
+  { name:'Vere\u0219ti', judet:'Suceava', mwp:9.8, lat:47.65, lon:26.35, status:'operational' },
+  { name:'Cosme\u0219ti', judet:'Giurgiu', mwp:9.9, lat:44.23, lon:26.12, status:'operational' },
+  { name:'Oradea 2', judet:'Bihor', mwp:49.8, lat:47.08, lon:21.95, status:'operational' },
+  { name:'T\u00e2rgu Mure\u0219', judet:'Mure\u0219', mwp:9.9, lat:46.54, lon:24.55, status:'operational' },
+  { name:'Otopeni', judet:'Ilfov', mwp:9.8, lat:44.55, lon:26.08, status:'operational' },
+  { name:'\u0218tef\u0103ne\u0219ti', judet:'Arge\u0219', mwp:9.9, lat:44.87, lon:24.83, status:'operational' },
+  { name:'Tulcea', judet:'Tulcea', mwp:9.8, lat:45.18, lon:28.80, status:'operational' },
+  { name:'Arad', judet:'Arad', mwp:49.9, lat:46.17, lon:21.32, status:'operational' },
+  { name:'Pardubice', judet:'Cehia', mwp:49.8, lat:50.04, lon:15.78, status:'operational' },
+  { name:'Giurgiu Nord', judet:'Giurgiu', mwp:14.9, lat:43.92, lon:25.97, status:'constructie' },
+  { name:'Buz\u0103u Est', judet:'Buz\u0103u', mwp:24.8, lat:45.15, lon:26.83, status:'constructie' },
+  { name:'Br\u0103ila Sud', judet:'Br\u0103ila', mwp:19.9, lat:45.27, lon:27.95, status:'constructie' },
+  { name:'Constan\u021ba Vest', judet:'Constan\u021ba', mwp:29.8, lat:44.17, lon:28.55, status:'constructie' },
+  { name:'Craiova Nord', judet:'Dolj', mwp:14.9, lat:44.35, lon:23.82, status:'constructie' },
+  { name:'Ploie\u0219ti Est', judet:'Prahova', mwp:9.9, lat:44.95, lon:26.05, status:'finalizat' },
+];
+
+const COLORS = [
+  '#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316','#84cc16',
+  '#ec4899','#14b8a6','#a855f7','#eab308','#22c55e','#6366f1','#f43f5e','#0ea5e9',
+  '#d946ef','#fb923c','#4ade80','#818cf8','#34d399','#fbbf24','#60a5fa','#c084fc',
+  '#f87171','#2dd4bf','#a78bfa','#facc15','#86efac','#93c5fd','#e879f9','#fdba74',
+  '#6ee7b7','#c4b5fd','#fca5a5','#5eead4','#ddd6fe','#fde68a','#bbf7d0','#bfdbfe'
+];
+
+let liveData = [];
+let weatherData = [];
+let prodChartObj = null;
+let pretSpot = 72;
+
+// ===== CLOCK =====
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'}) + ', ' + now.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== TABS =====
+function showTab(name, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  // Show/hide prod chart section (only on harta tab)
+  document.getElementById('prod-chart-section').style.display = (name==='globe') ? 'block' : 'none';
+  if(name==='twin') populateTwinSelect();
+  if(name==='sites') renderSitesTable();
+  if(name==='tichete') loadTichete();
+}
+
+// ===== LIVE DATA SIMULATION =====
+function generateLiveData() {
+  const h = new Date().getHours();
+  const sunFactor = h>=6 && h<=20 ? Math.sin((h-6)/14*Math.PI) : 0;
+  liveData = SITES.map((s,i) => {
+    if(s.status==='constructie') return { liveMW:0, pr:0, irr:0, mwh:0 };
+    const irr = weatherData[i]?.irr || Math.round(200+Math.random()*600)*sunFactor;
+    const pr = 0.72 + Math.random()*0.12;
+    const liveMW = +(s.mwp * sunFactor * pr * (irr/1000)).toFixed(1);
+    const mwh = +(liveMW * h * 0.85).toFixed(0);
+    return { liveMW, pr:+(pr*100).toFixed(1), irr:Math.round(irr*sunFactor), mwh };
+  });
+  updateKPIs();
+}
+
+function updateKPIs() {
+  const totalMW = liveData.reduce((s,d) => s+d.liveMW, 0);
+  const totalMWh = liveData.reduce((s,d) => s+d.mwh, 0);
+  const eur = totalMWh * pretSpot;
+  const co2 = totalMWh * 0.45;
+  document.getElementById('kpi-prod').textContent = totalMW.toFixed(1)+' MW';
+  document.getElementById('kpi-mwh').textContent = totalMWh.toLocaleString('ro-RO')+' MWh';
+  document.getElementById('kpi-eur').textContent = eur.toLocaleString('ro-RO',{maximumFractionDigits:0})+' €';
+  document.getElementById('kpi-co2').textContent = co2.toFixed(1)+' t';
+}
+
+// ===== HARTA LEAFLET =====
+let mapObj = null;
+function initMap() {
+  if(mapObj) return;
+  mapObj = L.map('map', {zoomControl:true, attributionControl:false}).setView([45.5, 24.0], 5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains:'abcd', maxZoom:19
+  }).addTo(mapObj);
+  SITES.forEach(function(s, i) {
+    const color = s.status==='constructie' ? '#3b82f6' : s.status==='finalizat' ? '#10b981' : '#f59e0b';
+    const radius = Math.max(8, Math.min(28, s.mwp/6));
+    const marker = L.circleMarker([s.lat, s.lon], {
+      radius: radius, fillColor: color, color: color,
+      weight:2, opacity:0.9, fillOpacity:0.7
+    }).addTo(mapObj);
+    marker.bindPopup(
+      '<div style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:8px;min-width:180px;">' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:8px;">'+s.name+'</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+      '<div style="font-size:11px;color:#64748b;">Județ</div><div style="font-size:11px;">'+s.judet+'</div>' +
+      '<div style="font-size:11px;color:#64748b;">Capacitate</div><div style="font-size:11px;color:#f59e0b;">'+s.mwp+' MWp</div>' +
+      '<div style="font-size:11px;color:#64748b;">Status</div><div style="font-size:11px;color:'+color+';">'+s.status+'</div>' +
+      '</div></div>',
+      {className:'dark-popup'}
+    );
+  });
+}
+
+// ===== WEATHER =====
+async function loadWeather() {
+  const list = document.getElementById('weather-list');
+  list.innerHTML = '<div style="color:#64748b;font-size:12px;">Se incarca <span class="spinner"></span></div>';
+  try {
+    const opSitesW = SITES.filter(s=>s.status==='operational');
+    const results = await Promise.all(opSitesW.map(s =>
+      fetch('https://api.open-meteo.com/v1/forecast?latitude='+s.lat+'&longitude='+s.lon+'&current=temperature_2m,shortwave_radiation,cloud_cover,wind_speed_10m&timezone=Europe%2FBucharest')
+        .then(r=>r.json())
+    ));
+    let html = '';
+    results.forEach((r,i) => {
+      const c = r.current;
+      const irr = c.shortwave_radiation||0;
+      const temp = c.temperature_2m||0;
+      const cloud = c.cloud_cover||0;
+      const wind = c.wind_speed_10m||0;
+      const siteIdx = SITES.findIndex(s=>s.name===opSitesW[i].name);
+      if(siteIdx>=0) weatherData[siteIdx] = { irr, temp, cloud, wind };
+      const irrColor = irr>600?'#f59e0b':irr>300?'#fcd34d':'#94a3b8';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#0f172a;border-radius:8px;margin-bottom:6px;border:1px solid #1e293b;">' +
+        '<div style="font-size:12px;font-weight:600;color:#e2e8f0;">'+opSitesW[i].name+' <span style="color:#475569;font-size:10px;">'+opSitesW[i].judet+'</span></div>' +
+        '<div style="display:flex;gap:12px;font-size:11px;">' +
+        '<span style="color:'+irrColor+';">&#9728; '+irr+' W/m&sup2;</span>' +
+        '<span style="color:#93c5fd;">&#127777; '+temp+'&deg;C</span>' +
+        '<span style="color:#64748b;">&#9729; '+cloud+'%</span>' +
+        '<span style="color:#64748b;">&#128168; '+wind+' km/h</span>' +
+        '</div></div>';
+    });
+    list.innerHTML = html || '<div style="color:#64748b;font-size:12px;">Date indisponibile</div>';
+    generateLiveData();
+    renderProdChart();
+    renderSitesTable();
+  } catch(e) {
+    list.innerHTML = '<div style="color:#f87171;font-size:12px;">Eroare Open-Meteo API</div>';
+    generateLiveData();
+    renderProdChart();
+  }
+}
+
+// ===== PRODUCTIE CHART (FULL WIDTH) =====
+function renderProdChart() {
+  const now = new Date().getHours();
+  const labels = [];
+  for(let h=6;h<=20;h++) labels.push(h+':00');
+  const opSites = SITES.filter(s=>s.status==='operational');
+  const datasets = opSites.map((s,i)=>({
+    label: s.name, tension:0.4, pointRadius:1, fill:false,
+    borderColor: COLORS[i % COLORS.length],
+    backgroundColor: COLORS[i % COLORS.length]+'22',
+    borderWidth: 1.5,
+    data: labels.map((_,idx)=>{
+      const h=idx+6; if(h>now) return null;
+      return +(s.mwp*Math.sin((h-6)/14*Math.PI)*(0.78+Math.random()*0.12)).toFixed(1);
+    })
+  }));
+  if(prodChartObj) prodChartObj.destroy();
+  prodChartObj = new Chart(document.getElementById('prod-chart').getContext('2d'),{
+    type:'line', data:{labels,datasets},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{
+          labels:{color:'#94a3b8',font:{size:9},boxWidth:12,padding:8},
+          position:'top'
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'#1e293b'},
+           title:{display:true,text:'MW',color:'#475569',font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ===== AI ANOMALY DETECTION =====
+async function runAnomalyAI() {
+  const btn = document.querySelector('#tab-anomalii .btn-amber');
+  btn.textContent = '⏳ Analizez...';
+  btn.disabled = true;
+  document.getElementById('anomaly-explain').innerHTML = '<span class="spinner"></span> Se analizeaza datele...';
+  document.getElementById('anomaly-list').innerHTML = '';
+  try {
+    const siteInfo = SITES.map((s,i)=>s.name+' ['+( s.status==='constructie'?'IN CONSTRUCTIE - productia 0 este NORMALA, NU anomalie':'OPERATIONAL')+
+      ']: PR='+( liveData[i]?.pr||0)+'%, Productie='+(liveData[i]?.liveMW||0)+'MW, Iradiere='+(liveData[i]?.irr||0)+'W/m2').join('\n');
+    const prompt = 'Esti un expert SCADA pentru parcuri fotovoltaice. Analizeaza aceste date live si identifica anomalii:\n\n'+siteInfo+'\n\nPret spot curent: '+pretSpot+' EUR/MWh\nOra curenta: '+new Date().getHours()+':00\n\nRaspunde STRICT in format JSON: {"anomalii":[{"site":"nume","severitate":"critica|medie|ok","problema":"descriere scurta","cauza":"cauza probabila","actiune":"ce trebuie facut"}],"sumar":"un paragraf cu situatia generala in romana"}';
+    const resp = await fetch('https://sergiu.online/api/ai/scada', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages:[{role:'user',content:prompt}]})
+    });
+    const d = await resp.json();
+    let txt = d.result||d.text||'';
+    txt = txt.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(txt);
+    document.getElementById('anomaly-explain').innerHTML = '<div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;font-size:13px;color:#94a3b8;line-height:1.6;">'+parsed.sumar+'</div>';
+    let html = '';
+    const critice = parsed.anomalii.filter(a=>a.severitate==='critica');
+    parsed.anomalii.forEach(a=>{
+      const cls = 'anomaly-card '+a.severitate;
+      const icon = a.severitate==='critica'?'🔴':a.severitate==='medie'?'🟡':'🟢';
+      html += '<div class="'+cls+'"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:#e2e8f0;font-size:13px;font-weight:600;">'+icon+' '+a.site+'</span><span class="badge-'+a.severitate+'">'+a.severitate.toUpperCase()+'</span></div><div style="color:#94a3b8;font-size:12px;margin-bottom:4px;"><b style="color:#e2e8f0;">Problema:</b> '+a.problema+'</div><div style="color:#94a3b8;font-size:12px;margin-bottom:4px;"><b style="color:#e2e8f0;">Cauza:</b> '+a.cauza+'</div><div style="color:#6ee7b7;font-size:12px;margin-bottom:8px;"><b>Actiune:</b> '+a.actiune+'</div>';
+      html += '<button class="btn btn-slate" style="font-size:11px;padding:5px 10px;" onclick="createTichet(\''+a.site+'\',\''+a.severitate+'\',\''+a.problema.replace(/'/g,'')+'\',\''+a.actiune.replace(/'/g,'')+'\')">+ Tichet</button>';
+      html += '</div>';
+    });
+    document.getElementById('anomaly-list').innerHTML = html;
+    document.getElementById('kpi-anom').textContent = critice.length;
+    if(critice.length>0) autoTelegramCritice(critice);
+  } catch(e) {
+    document.getElementById('anomaly-explain').innerHTML = '<div style="color:#f87171;font-size:12px;">Eroare AI: '+e.message+'</div>';
+  }
+  btn.textContent = '▶ Ruleaza Analiza AI';
+  btn.disabled = false;
+}
+
+// ===== DIGITAL TWIN =====
+function populateTwinSelect() {
+  const sel = document.getElementById('twin-site');
+  if(sel.options.length > 0) return;
+  SITES.filter(s=>s.status==='operational').forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value = s.name; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+}
+
+let twinChartObj = null;
+async function runDigitalTwin() {
+  const siteName = document.getElementById('twin-site').value;
+  const siteIdx = SITES.findIndex(s=>s.name===siteName);
+  if(siteIdx<0) return;
+  const s = SITES[siteIdx];
+  const irr = weatherData[siteIdx]?.irr || 600;
+  const temp = weatherData[siteIdx]?.temp || 25;
+  const tempCoef = -0.0035;
+  const prIdeal = 0.82;
+  const prReal = liveData[siteIdx]?.pr/100 || 0.78;
+  const mwFizic = +(s.mwp*(irr/1000)*prIdeal*(1+tempCoef*(temp-25))).toFixed(2);
+  const mwReal = liveData[siteIdx]?.liveMW || 0;
+  const gap = +(mwFizic - mwReal).toFixed(2);
+  const gapPct = mwFizic>0 ? +((gap/mwFizic)*100).toFixed(1) : 0;
+  document.getElementById('twin-result').innerHTML =
+    '<div style="display:grid;gap:12px;">' +
+    '<div style="background:#0f172a;padding:12px;border-radius:8px;border:1px solid #334155;">' +
+    '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">PRODUCTIE FIZICA ESTIMATA</div>' +
+    '<div style="font-size:22px;font-weight:700;color:#f59e0b;">'+mwFizic+' MW</div>' +
+    '</div>' +
+    '<div style="background:#0f172a;padding:12px;border-radius:8px;border:1px solid #334155;">' +
+    '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">PRODUCTIE REALA</div>' +
+    '<div style="font-size:22px;font-weight:700;color:#34d399;">'+mwReal+' MW</div>' +
+    '</div>' +
+    '<div style="background:#0f172a;padding:12px;border-radius:8px;border:1px solid '+(gap>2?'#ef4444':'#334155')+';border-left:4px solid '+(gap>2?'#ef4444':'#10b981')+';">' +
+    '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">GAP FIZIC vs REAL</div>' +
+    '<div style="font-size:22px;font-weight:700;color:'+(gap>2?'#f87171':'#6ee7b7')+';">'+gap+' MW ('+gapPct+'%)</div>' +
+    '<div style="font-size:11px;color:#64748b;margin-top:4px;">Iradiere: '+irr+' W/m² | Temp: '+temp+'°C | PR Real: '+(prReal*100).toFixed(1)+'%</div>' +
+    '</div></div>';
+  const labels = [];
+  const fizicData = [];
+  const realData = [];
+  const now = new Date().getHours();
+  for(let h=6;h<=20;h++) {
+    labels.push(h+':00');
+    const sf = Math.sin((h-6)/14*Math.PI);
+    fizicData.push(h<=now ? +(s.mwp*(irr/1000)*prIdeal*sf).toFixed(1) : null);
+    realData.push(h<=now ? +(s.mwp*(irr/1000)*prReal*sf*(0.9+Math.random()*0.15)).toFixed(1) : null);
+  }
+  if(twinChartObj) twinChartObj.destroy();
+  twinChartObj = new Chart(document.getElementById('twin-chart').getContext('2d'),{
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Fizic (model)',data:fizicData,borderColor:'#f59e0b',backgroundColor:'#f59e0b22',tension:0.4,fill:true},
+      {label:'Real (SCADA)',data:realData,borderColor:'#34d399',backgroundColor:'#34d39922',tension:0.4,fill:true}
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8'}}},
+      scales:{x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},y:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}}}}
+  });
+}
+
+// ===== PREDICTIE 7 ZILE =====
+let predChartObj = null;
+async function runPredictie() {
+  document.getElementById('pred-grid').innerHTML = '<div style="color:#64748b;font-size:12px;grid-column:span 7;">Se incarca <span class="spinner"></span></div>';
+  document.getElementById('pred-explain').textContent = '';
+  try {
+    const s = SITES[0];
+    const resp = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+s.lat+'&longitude='+s.lon+'&daily=shortwave_radiation_sum,temperature_2m_max&timezone=Europe%2FBucharest&forecast_days=7');
+    const d = await resp.json();
+    const totalMWp = SITES.filter(s=>s.status==='operational').reduce((sum,x)=>sum+x.mwp,0);
+    const predData = d.daily.time.map((date,i)=>{
+      const irrKwh = (d.daily.shortwave_radiation_sum[i]||0)/3.6;
+      const mwh = +(totalMWp * irrKwh/1000 * 0.80).toFixed(0);
+      const eur = +(mwh * pretSpot).toFixed(0);
+      return { date, mwh, eur, irr: Math.round(irrKwh) };
+    });
+    document.getElementById('pred-grid').innerHTML = predData.map((d,i)=>{
+      const isToday = i===0;
+      return '<div style="background:#0f172a;border:1px solid '+(isToday?'#f59e0b':'#1e293b')+';border-radius:8px;padding:10px;text-align:center;">' +
+        '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">'+d.date.slice(5)+'</div>' +
+        '<div style="font-size:13px;font-weight:700;color:#818cf8;margin-bottom:2px;">'+d.mwh.toLocaleString('ro-RO')+'</div>' +
+        '<div style="font-size:9px;color:#64748b;margin-bottom:4px;">MWh</div>' +
+        '<div style="font-size:11px;color:#10b981;font-weight:600;">'+Math.round(d.eur/1000)+'k €</div>' +
+        '</div>';
+    }).join('');
+    document.getElementById('pred-explain').textContent = 'Open-Meteo forecast, PR=80%, pret spot ' + pretSpot + ' EUR/MWh';
+    if(predChartObj) predChartObj.destroy();
+    predChartObj = new Chart(document.getElementById('pred-chart').getContext('2d'),{
+      type:'bar',
+      data:{
+        labels: predData.map(d=>d.date.slice(5)),
+        datasets:[
+          {label:'MWh',data:predData.map(d=>d.mwh),backgroundColor:'#818cf8aa',yAxisID:'y'},
+          {label:'EUR',data:predData.map(d=>d.eur),type:'line',borderColor:'#10b981',backgroundColor:'#10b98122',tension:0.4,yAxisID:'y1'}
+        ]
+      },
+      options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8'}}},
+        scales:{
+          x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},
+          y:{ticks:{color:'#64748b'},grid:{color:'#1e293b'},position:'left'},
+          y1:{ticks:{color:'#10b981'},grid:{display:false},position:'right'}
+        }}
+    });
+  } catch(e) {
+    document.getElementById('pred-explain').innerHTML = '<div style="color:#f87171;font-size:12px;">Eroare: '+e.message+'</div>';
+  }
+}
+
+// ===== BENCHMARK =====
+let benchChartObj = null;
+function runBenchmark() {
+  const opSites = SITES.map((s,i)=>({...s,idx:i})).filter(s=>s.status==='operational').sort((a,b)=>b.mwp-a.mwp).slice(0,10);
+  const labels = opSites.map(s=>s.name);
+  const prData = opSites.map(s=>liveData[s.idx]?.pr||0);
+  const totalOpMWp = SITES.filter(s=>s.status==='operational').reduce((s,x)=>s+x.mwp,0);
+  if(benchChartObj) benchChartObj.destroy();
+  benchChartObj = new Chart(document.getElementById('bench-chart').getContext('2d'),{
+    type:'bar',
+    data:{labels, datasets:[{label:'PR %',data:prData,backgroundColor:prData.map(v=>v>80?'#10b981':v>70?'#f59e0b':'#ef4444')}]},
+    options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'},max:100},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#1e293b'}}}}
+  });
+  const sorted = [...opSites].sort((a,b)=>(liveData[b.idx]?.pr||0)-(liveData[a.idx]?.pr||0)).slice(0,5);
+  document.getElementById('bench-list').innerHTML = sorted.map((s,i)=>{
+    const pr = liveData[s.idx]?.pr||0;
+    const color = pr>80?'#10b981':pr>70?'#f59e0b':'#ef4444';
+    return '<div style="display:flex;justify-content:space-between;margin-bottom:8px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;">' +
+      '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#64748b;font-size:13px;">#'+(i+1)+'</span><span style="font-size:13px;font-weight:600;">'+s.name+'</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<div style="background:#1e293b;border-radius:6px;height:8px;width:80px;"><div style="background:'+color+';height:8px;border-radius:6px;width:'+pr+'%;"></div></div>' +
+      '<span style="color:'+color+';font-size:13px;font-weight:700;">'+pr+'%</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ===== SITES TABLE =====
+function renderSitesTable() {
+  let html = '';
+  SITES.forEach((s,i)=>{
+    const d = liveData[i]||{liveMW:0,pr:0,irr:0};
+    const statusColor = s.status==='operational'?'#f59e0b':s.status==='finalizat'?'#10b981':'#3b82f6';
+    const statusLabel = s.status==='operational'?'Operational':s.status==='finalizat'?'Finalizat':'Constructie';
+    html += '<tr style="border-bottom:1px solid #1e293b;">' +
+      '<td style="padding:10px;font-weight:600;">'+s.name+'</td>' +
+      '<td style="padding:10px;color:#64748b;">'+s.judet+'</td>' +
+      '<td style="padding:10px;text-align:right;color:#f59e0b;">'+s.mwp+'</td>' +
+      '<td style="padding:10px;text-align:right;color:#34d399;">'+d.liveMW+'</td>' +
+      '<td style="padding:10px;text-align:right;color:'+(d.pr>80?'#10b981':d.pr>70?'#fcd34d':'#f87171')+';">'+d.pr+'%</td>' +
+      '<td style="padding:10px;text-align:right;color:#94a3b8;">'+d.irr+' W/m²</td>' +
+      '<td style="padding:10px;text-align:center;"><span style="background:'+statusColor+'22;color:'+statusColor+';padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">'+statusLabel+'</span></td>' +
+      '</tr>';
+  });
+  document.getElementById('sites-tbody').innerHTML = html;
+}
+
+// ===== TICHETE =====
+async function loadTichete() {
+  document.getElementById('tichete-list').innerHTML = '<div style="color:#64748b;text-align:center;padding:20px;"><span class="spinner"></span></div>';
+  try {
+    const resp = await fetch('https://sergiu.online/api/tickets');
+    const tichete = await resp.json();
+    const total = tichete.length;
+    const critice = tichete.filter(t=>t.severitate==='critica').length;
+    const deschise = tichete.filter(t=>t.status==='deschis').length;
+    const rezolvate = tichete.filter(t=>t.status==='rezolvat').length;
+    document.getElementById('tichete-stats').innerHTML =
+      '<div class="card" style="padding:14px;"><div style="font-size:20px;font-weight:700;color:#e2e8f0;">'+total+'</div><div style="font-size:11px;color:#64748b;margin-top:2px;">Total</div></div>' +
+      '<div class="card" style="padding:14px;border-left:3px solid #ef4444;"><div style="font-size:20px;font-weight:700;color:#f87171;">'+critice+'</div><div style="font-size:11px;color:#64748b;margin-top:2px;">Critice</div></div>' +
+      '<div class="card" style="padding:14px;border-left:3px solid #f59e0b;"><div style="font-size:20px;font-weight:700;color:#fcd34d;">'+deschise+'</div><div style="font-size:11px;color:#64748b;margin-top:2px;">Deschise</div></div>' +
+      '<div class="card" style="padding:14px;border-left:3px solid #10b981;"><div style="font-size:20px;font-weight:700;color:#6ee7b7;">'+rezolvate+'</div><div style="font-size:11px;color:#64748b;margin-top:2px;">Rezolvate</div></div>';
+    if(tichete.length===0){
+      document.getElementById('tichete-list').innerHTML='<div style="color:#64748b;text-align:center;padding:40px;font-size:14px;">Nu exista tichete. Ruleaza AI Anomalii pentru a genera automat.</div>';
+      return;
+    }
+    document.getElementById('tichete-list').innerHTML = tichete.map(t=>{
+      const borderColor = t.severitate==='critica'?'#ef4444':t.severitate==='medie'?'#f59e0b':'#10b981';
+      return '<div class="card" style="padding:16px;border-left:4px solid '+borderColor+';">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">' +
+        '<div><span style="font-size:14px;font-weight:700;color:#e2e8f0;">'+t.site+'</span> <span class="badge-'+t.severitate+'">'+t.severitate.toUpperCase()+'</span></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<span style="font-size:11px;color:#64748b;">'+new Date(t.createdAt).toLocaleString('ro-RO')+'</span>' +
+        '<button class="btn btn-slate" style="font-size:11px;padding:4px 10px;" onclick="sendTichetTelegram(\''+t.id+'\')">Telegram</button>' +
+        (t.status==='deschis'?'<button class="btn btn-amber" style="font-size:11px;padding:4px 10px;" onclick="rezolvaTichet(\''+t.id+'\')">Rezolva</button>':'<span style="color:#10b981;font-size:11px;font-weight:600;">✓ REZOLVAT</span>') +
+        '<button class="btn btn-red" style="font-size:11px;padding:4px 10px;" onclick="stergeTichet(\''+t.id+'\')">×</button>' +
+        '</div></div>' +
+        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;"><b style="color:#e2e8f0;">Problema:</b> '+t.problema+'</div>' +
+        '<div style="font-size:12px;color:#6ee7b7;"><b style="color:#e2e8f0;">Actiune:</b> '+t.actiune+'</div>' +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('tichete-list').innerHTML='<div style="color:#f87171;text-align:center;padding:20px;">Eroare la incarcarea tichetelor: '+e.message+'</div>';
+  }
+}
+
+async function createTichet(site, severitate, problema, actiune) {
+  try {
+    await fetch('https://sergiu.online/api/tickets', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({site, severitate, problema, actiune, status:'deschis', createdAt: new Date().toISOString()})
+    });
+    alert('Tichet creat pentru '+site);
+  } catch(e) { alert('Eroare: '+e.message); }
+}
+
+async function rezolvaTichet(id) {
+  await fetch('https://sergiu.online/api/tickets/'+id, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'rezolvat'})});
+  loadTichete();
+}
+
+async function stergeTichet(id) {
+  if(!confirm('Stergi tichetul?')) return;
+  await fetch('https://sergiu.online/api/tickets/'+id, {method:'DELETE'});
+  loadTichete();
+}
+
+async function sendTichetTelegram(id) {
+  try {
+    const r = await fetch('https://sergiu.online/api/tickets/telegram', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+    const d = await r.json();
+    if(d.ok) alert('Trimis pe Telegram!');
+    else alert('Eroare Telegram: '+d.error);
+  } catch(e) { alert('Eroare: '+e.message); }
+}
+
+async function autoTelegramCritice(critice) {
+  for(const a of critice) {
+    try {
+      const tichetResp = await fetch('https://sergiu.online/api/tickets', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({site:a.site, severitate:a.severitate, problema:a.problema, actiune:a.actiune, status:'deschis', createdAt:new Date().toISOString()})
+      });
+      const tichet = await tichetResp.json();
+      await fetch('https://sergiu.online/api/tickets/telegram', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:tichet.id})});
+    } catch(e) {}
+  }
+}
+
+// ===== TELEGRAM TEST =====
+async function confirmTelegram() {
+  document.getElementById('tg-result').textContent = 'Se trimite...';
+  try {
+    const r = await fetch('https://api.telegram.org/bot8318347456:AAGRdwa0Z7Tvhp2lzovO-C-WvnZoAq_b4DU/sendMessage', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:'7758960424', text:'⚡ HELIOS SCADA — Test alerta\nOra: '+new Date().toLocaleString('ro-RO')+'\nStatus: ONLINE', parse_mode:'HTML'})
+    });
+    const d = await r.json();
+    document.getElementById('tg-result').textContent = d.ok ? 'Mesaj trimis cu succes!' : 'Eroare: '+d.description;
+  } catch(e) { document.getElementById('tg-result').textContent = 'Eroare: '+e.message; }
+}
+
+// ===== PDF RAPORT =====
+function genRaportPDF() {
+  alert('Raport PDF — in dezvoltare. Disponibil in urmatoarea versiune HELIOS.');
+}
+
+// ===== INIT =====
+window.addEventListener('load', function() {
+  initMap();
+  generateLiveData();
+  loadWeather();
+  setInterval(generateLiveData, 60000);
+});
+</script>
+</body>
+</html>
