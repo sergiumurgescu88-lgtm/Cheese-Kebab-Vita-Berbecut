@@ -180,6 +180,34 @@ async function startServer() {
     }
   });
 
+
+  // /api/ai/scada → OpenRouter (dedicat SCADA, nu atinge SFEngine)
+  app.post('/api/ai/scada', async (req, res) => {
+    const { messages, systemInstruction } = req.body;
+    try {
+      const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+        model: 'google/gemini-2.5-flash-preview',
+        messages: [
+          ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+          ...messages
+        ],
+        max_tokens: 4096,
+        temperature: 0.6
+      }, {
+        headers: {
+          'Authorization': 'Bearer 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',
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://sergiu.online',
+          'X-Title': 'HELIOS SCADA'
+        }
+      });
+      res.json({ text: response.data.choices[0].message.content });
+    } catch (error: any) {
+      console.error('SCADA AI Error:', error.response?.data || error.message);
+      res.status(500).json({ error: true, message: error.response?.data?.message || error.message });
+    }
+  });
+
   createAIRoute("qwen");
   createAIRoute("glm5");
   createAIRoute("deepseek");

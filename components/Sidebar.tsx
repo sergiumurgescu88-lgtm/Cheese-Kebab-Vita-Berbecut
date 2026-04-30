@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature, ScanSearch } from 'lucide-react';
+import { X, LayoutDashboard, Server, Sparkles, Sun, Activity, CloudSun, Zap, TrendingUp, Bot, FileText, Cpu, Settings, FileSignature, ScanSearch, ExternalLink, Globe, Radio } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -85,6 +85,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
               <span className="uppercase tracking-widest">{item.label}</span>
             </button>
           ))}
+
+          {/* External Platforms */}
+          <div className="pt-3 mt-3 border-t border-slate-800">
+            <p className="text-[9px] text-slate-600 uppercase font-mono tracking-widest px-4 mb-2">Platforme Live</p>
+            <a href="https://portal.sergiu.online?guest=true" target="_blank" rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold transition-all duration-300 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-transparent hover:border-emerald-500/20 group">
+              <Globe className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="flex-1 text-left">Portal Clienți</span>
+              <ExternalLink className="w-3 h-3 opacity-50" />
+            </a>
+            <a href="https://scada.sergiu.online" target="_blank" rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold transition-all duration-300 text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 border border-transparent hover:border-sky-500/20 group">
+              <Radio className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="flex-1 text-left">SCADA Enterprise</span>
+              <ExternalLink className="w-3 h-3 opacity-50" />
+            </a>
+          </div>
         </nav>
 
         <div className="p-4 border-t border-slate-800 shrink-0">
