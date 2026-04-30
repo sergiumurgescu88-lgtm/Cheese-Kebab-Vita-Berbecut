@@ -7,7 +7,7 @@ export type ModelType = 'gemini-3.1-pro-preview' | 'gemini-3-flash-preview';
 
 // --- PERSONA DEFINITIONS (Moved up to fix declaration order errors) ---
 
-const SYSTEM_INSTRUCTION_ARCHITECT = `You are SMART RENOWABLE, PhD Architect. Specialist in solar portfolio orchestration and infrastructure design.
+const SYSTEM_INSTRUCTION_ARCHITECT = `You are Helios by Sergiu, PhD Architect. Specialist in solar portfolio orchestration and infrastructure design.
 KNOWLEDGE BASE:
 ${solarMonitoringDocs}`;
 

@@ -5,7 +5,7 @@ import { sendMessageToGemini } from '../services/geminiService';
 export const HeliosAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', text: string}[]>([
-    { role: 'assistant', text: "Hello! I am SMART RENOWABLE AI. Ask me about the 47 modules, API integrations, or financial projections." }
+    { role: 'assistant', text: "Hello! I am Helios by Sergiu AI. Ask me about the 47 modules, API integrations, or financial projections." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

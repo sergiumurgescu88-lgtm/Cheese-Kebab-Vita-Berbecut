@@ -29,7 +29,7 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
         return parsed.map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
       } catch (e) { console.error(e); }
     }
-    return [{ role: 'assistant', text: "Salut. Sunt SMART RENOWABLE, expertul tău în HG 907/2016. Să generăm SF-ul tău de impact astăzi.", timestamp: new Date() }];
+    return [{ role: 'assistant', text: "Salut. Sunt Helios by Sergiu, expertul tău în HG 907/2016. Să generăm SF-ul tău de impact astăzi.", timestamp: new Date() }];
   });
   const [input, setInput] = useState('');
   const [lat, setLat] = useState('');
@@ -49,8 +49,8 @@ export const HeliosChat: React.FC<HeliosChatProps> = ({ setActiveTab }) => {
   useEffect(() => { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages)); }, [messages]);
 
   const clearHistory = () => {
-    if (window.confirm('Reset SMART RENOWABLE SF session?')) {
-      setMessages([{ role: 'assistant', text: "Salut. Sunt SMART RENOWABLE. Gata pentru un nou studiu de fezabilitate.", timestamp: new Date() }]);
+    if (window.confirm('Reset Helios by Sergiu SF session?')) {
+      setMessages([{ role: 'assistant', text: "Salut. Sunt Helios by Sergiu. Gata pentru un nou studiu de fezabilitate.", timestamp: new Date() }]);
       localStorage.removeItem(HISTORY_KEY);
     }
   };

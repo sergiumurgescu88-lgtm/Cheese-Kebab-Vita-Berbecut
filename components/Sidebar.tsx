@@ -11,23 +11,23 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, onClose }) => {
   const navItems = [
-    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'modules', label: 'Modules Inventory', icon: Server },
-    { id: 'ai-workbench', label: 'AI Workbench', icon: Sparkles },
-    { id: 'fusionsolar', label: 'FusionSolar Live', icon: Sun },
-    { id: 'live-dashboard', label: 'Live Dashboard', icon: Activity },
-    { id: 'weather', label: 'Weather Forecast', icon: CloudSun },
-    { id: 'omni-scada', label: 'OMNI-SCADA', icon: Activity },
-    { id: 'volta', label: 'VOLTA (Master PPC)', icon: Zap },
-    { id: 'mercuria', label: 'MERCURIA (Trading)', icon: TrendingUp },
-    { id: 'solar-ai', label: 'SolarAI Architect', icon: Bot },
-    { id: 'sf-engine', label: 'SF Engine', icon: FileText },
-    { id: 'project-cmd', label: 'Project CMD Center', icon: LayoutDashboard },
-    { id: 'epc-tender', label: 'EPC Tender Engine', icon: FileSignature },
-    { id: 'inspect-ai', label: 'InspectAI (Drone)', icon: ScanSearch },
-    { id: 'helio-sf', label: 'Helio (SF Expert)', icon: FileText },
-    { id: 'atlas', label: 'Atlas (Tech Engine)', icon: Cpu },
-    { id: 'settings', label: 'System Config', icon: Settings },
+    { id: 'dashboard',      label: 'Overview',            icon: LayoutDashboard },
+    { id: 'live-dashboard', label: 'Live Dashboard',       icon: Activity },
+    { id: 'fusionsolar',    label: 'FusionSolar Live',     icon: Sun },
+    { id: 'weather',        label: 'Weather Forecast',     icon: CloudSun },
+    { id: 'omni-scada',     label: 'OMNI-SCADA',           icon: Activity },
+    { id: 'volta',          label: 'VOLTA (Master PPC)',   icon: Zap },
+    { id: 'mercuria',       label: 'MERCURIA (Trading)',   icon: TrendingUp },
+    { id: 'modules',        label: 'Modules Inventory',    icon: Server },
+    { id: 'ai-workbench',   label: 'AI Workbench',         icon: Sparkles },
+    { id: 'sf-engine',      label: 'SF Engine',            icon: FileText },
+    { id: 'project-cmd',    label: 'Project CMD Center',   icon: LayoutDashboard },
+    { id: 'epc-tender',     label: 'EPC Tender Engine',    icon: FileSignature },
+    { id: 'inspect-ai',     label: 'InspectAI (Drone)',    icon: ScanSearch },
+    { id: 'solar-ai',       label: 'SolarAI Architect',    icon: Bot },
+    { id: 'helio-sf',       label: 'Helio (SF Expert)',    icon: FileText },
+    { id: 'atlas',          label: 'Atlas (Tech Engine)',  icon: Cpu },
+    { id: 'settings',       label: 'System Config',        icon: Settings },
   ];
 
   const handleNavClick = (id: string) => {
@@ -57,8 +57,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
               <Sun className="text-slate-950 w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-white tracking-tighter leading-none">SMART RENOWABLE</h1>
-              <p className="text-[10px] text-slate-500 uppercase font-mono tracking-widest mt-1">v1.0.5 Enterprise</p>
+              <h1 className="text-lg font-black text-white tracking-tighter leading-none">HELIOS BY SERGIU</h1>
+              <p className="text-[10px] text-slate-500 uppercase font-mono tracking-widest mt-1">Helios by Sergiu v3.5</p>
             </div>
           </div>
           {/* Mobile Close Button */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Zap, MapPin, CheckCircle, Clock, Factory, Users, TrendingUp, ChevronRight } from 'lucide-react';
 
@@ -70,6 +70,19 @@ const productieData = [
   { luna: 'Dec', mwh: 10800 },
 ];
 
+// Mini widget FusionSolar — date live din API
+const useFusionSolarSummary = () => {
+  const [stations, setStations] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    fetch('/api/fusionsolar/stations').then(r=>r.json()).then(j=>setStations(j.data||[])).catch(()=>{});
+    const i = setInterval(()=>{
+      fetch('/api/fusionsolar/stations').then(r=>r.json()).then(j=>setStations(j.data||[])).catch(()=>{});
+    }, 120000);
+    return () => clearInterval(i);
+  }, []);
+  return stations;
+};
+
 export const Dashboard: React.FC = () => {
   const [tabActiv, setTabActiv] = useState<'active'|'finalizate'>('active');
 
@@ -79,7 +92,7 @@ export const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Portofoliu WALDEVAR Energy</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Portofoliu Helios by Sergiu Energy</h1>
           <p className="text-slate-400 text-xs mt-1">Lider EPC solar România · Date actualizate Q2 2026</p>
         </div>
         <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
@@ -110,6 +123,52 @@ export const Dashboard: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* FUSIONSOLAR LIVE SUMMARY */}
+      {(() => {
+        const fsStations = useFusionSolarSummary();
+        if (fsStations.length === 0) return null;
+        const totalPow = fsStations.reduce((s: number, p: any) => s + p.currentPower, 0);
+        const totalCap = fsStations.reduce((s: number, p: any) => s + p.capacity, 0);
+        const alarms = fsStations.filter((p: any) => p.status === 'ALARM').length;
+        return (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse inline-block" /> FusionSolar Live · {fsStations.length} parcuri
+              </h3>
+              {alarms > 0 && <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">{alarms} alarme</span>}
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-slate-800/50 rounded-xl p-3 text-center">
+                <div className="text-amber-400 font-black text-lg">{totalPow.toFixed(1)}</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest">MW Live</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-xl p-3 text-center">
+                <div className="text-sky-400 font-black text-lg">{totalCap.toFixed(0)}</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest">MWp Total</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-xl p-3 text-center">
+                <div className="text-emerald-400 font-black text-lg">{totalCap > 0 ? ((totalPow/totalCap)*100).toFixed(0) : 0}%</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest">Cap. Factor</div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              {fsStations.map((s: any) => (
+                <div key={s.plantCode} className="flex items-center gap-3">
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.status === 'ALARM' ? 'bg-red-400' : 'bg-emerald-400'}`} />
+                  <span className="text-[11px] text-slate-400 flex-1">{s.plantName}</span>
+                  <span className="text-[11px] font-bold text-white">{s.currentPower.toFixed(1)} MW</span>
+                  <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full" style={{width: `${Math.min((s.currentPower/s.capacity)*100,100)}%`}} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
 
       {/* Proiecte + Grafic */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -232,7 +291,7 @@ export const Dashboard: React.FC = () => {
       {/* Footer info */}
       <div className="flex items-center gap-2 text-slate-600 text-[10px]">
         <Clock className="w-3 h-3" />
-        <span>Date actualizate Q2 2026 · HELIOS Platform v3.1 · WALDEVAR Energy</span>
+        <span>Date actualizate Q2 2026 · HELIOS Platform v3.5 · Helios by Sergiu Energy</span>
       </div>
 
     </div>

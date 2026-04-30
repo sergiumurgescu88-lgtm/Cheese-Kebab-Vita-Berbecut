@@ -197,7 +197,7 @@ export const ProjectCMDCenter: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: '0 0 6px #10b981' }} />
           <span className="font-mono text-amber-400 font-semibold text-sm tracking-widest">PROJECT CMD CENTER</span>
-          <span className="text-slate-500 text-xs">— WALDEVAR Energy Portfolio</span>
+          <span className="text-slate-500 text-xs">— Helios by Sergiu Energy Portfolio</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="font-mono text-slate-500 text-xs">

@@ -379,6 +379,112 @@ async function startServer() {
     }
   });
 
+  
+  // ===== TELEGRAM WEBHOOK =====
+  app.post('/api/telegram/webhook', async (req, res) => {
+    res.json({ ok: true });
+    const msg = req.body?.message;
+    if (!msg) return;
+    const chatId = msg.chat?.id?.toString();
+    const text = (msg.text || '').trim().toLowerCase();
+    const from = msg.from?.first_name || 'User';
+
+    async function reply(txt: string) {
+      await axios.post(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        chat_id: chatId, text: txt, parse_mode: 'HTML'
+      });
+    }
+
+    if (text === '/start' || text === '/help') {
+      await reply(
+        `<b>HELIOS SCADA Bot</b> — Comenzi disponibile:\n\n` +
+        `/status — KPI-uri live\n` +
+        `/tichete — Tichete deschise\n` +
+        `/critic — Tichete critice\n` +
+        `/rezolva ID — Rezolva tichet\n` +
+        `/sterge ID — Sterge tichet\n` +
+        `/sites — Toate parcurile\n` +
+        `/help — Aceasta lista\n\n` +
+        `<a href="https://scada.sergiu.online">Deschide SCADA</a>`
+      );
+    } else if (text === '/status') {
+      const tickets = loadTickets();
+      const critice = tickets.filter((t: any) => t.severitate === 'critica' && t.status === 'DESCHIS').length;
+      await reply(
+        `<b>HELIOS SCADA — Status Live</b>\n\n` +
+        `<b>Capacitate:</b> 901.7 MWp\n` +
+        `<b>Tichete critice deschise:</b> ${critice}\n` +
+        `<b>Total tichete:</b> ${tickets.length}\n` +
+        `<b>Ora:</b> ${new Date().toLocaleString('ro-RO')}\n\n` +
+        `<a href="https://scada.sergiu.online">Vezi SCADA Live</a>`
+      );
+    } else if (text === '/tichete') {
+      const tickets = loadTickets().filter((t: any) => t.status === 'DESCHIS').slice(0, 5);
+      if (tickets.length === 0) {
+        await reply('Nu exista tichete deschise.');
+      } else {
+        let txt = '<b>Tichete Deschise:</b>\n\n';
+        tickets.forEach((t: any) => {
+          const icon = t.severitate === 'critica' ? '🚨' : t.severitate === 'medie' ? '🟡' : '🟢';
+          txt += `${icon} <b>${t.site}</b> — ${t.problema}\n<code>${t.id}</code>\n\n`;
+        });
+        await reply(txt);
+      }
+    } else if (text === '/critic') {
+      const tickets = loadTickets().filter((t: any) => t.severitate === 'critica' && t.status === 'DESCHIS');
+      if (tickets.length === 0) {
+        await reply('Nu exista tichete critice deschise.');
+      } else {
+        let txt = '<b>Tichete CRITICE:</b>\n\n';
+        tickets.forEach((t: any) => {
+          txt += `🚨 <b>${t.site}</b>\nProblema: ${t.problema}\nActiune: ${t.actiune}\nID: <code>${t.id}</code>\n\n`;
+        });
+        await reply(txt);
+      }
+    } else if (text.startsWith('/rezolva ')) {
+      const id = msg.text.trim().split(' ')[1];
+      const tickets = loadTickets();
+      const idx = tickets.findIndex((t: any) => t.id === id);
+      if (idx === -1) {
+        await reply(`Tichet <code>${id}</code> negasit.`);
+      } else {
+        tickets[idx].status = 'REZOLVAT';
+        tickets[idx].updatedAt = new Date().toISOString();
+        saveTickets(tickets);
+        await reply(`Tichet <code>${id}</code> marcat ca REZOLVAT.`);
+      }
+    } else if (text.startsWith('/sterge ')) {
+      const id = msg.text.trim().split(' ')[1];
+      const tickets = loadTickets();
+      const filtered = tickets.filter((t: any) => t.id !== id);
+      if (filtered.length === tickets.length) {
+        await reply(`Tichet <code>${id}</code> negasit.`);
+      } else {
+        saveTickets(filtered);
+        await reply(`Tichet <code>${id}</code> sters.`);
+      }
+    } else if (text === '/sites') {
+      await reply(
+        '<b>Parcuri Helios by Sergiu — 46 situri</b>\n\n' +
+        '40 Operationale | 5 In constructie | 1 Finalizat\n' +
+        'Capacitate totala: 901.7 MWp\n\n' +
+        '<a href="https://scada.sergiu.online">Vezi harta live</a>'
+      );
+    } else {
+      await reply('Comanda necunoscuta. Trimite /help pentru lista comenzilor.');
+    }
+  });
+
+  // Register webhook on startup
+  (async () => {
+    try {
+      await axios.post(`https://api.telegram.org/bot${TG_TOKEN}/setWebhook`, {
+        url: 'https://sergiu.online/api/telegram/webhook'
+      });
+      console.log('Telegram webhook registered.');
+    } catch(e) { console.error('Webhook reg error:', e); }
+  })();
+
   app.delete('/api/tickets/:id', (req, res) => {
     let tickets = loadTickets();
     tickets = tickets.filter((t: any) => t.id !== req.params.id);

@@ -60,6 +60,17 @@ const App: React.FC = () => {
     }
   };
 
+
+  // Mobile bottom nav items
+  const mobileNavItems = [
+    { id: 'dashboard',      label: 'Overview',  emoji: '🏠' },
+    { id: 'live-dashboard', label: 'Live',       emoji: '📡' },
+    { id: 'weather',        label: 'Meteo',      emoji: '🌤' },
+    { id: 'sf-engine',      label: 'SF Engine',  emoji: '📄' },
+    { id: 'epc-tender',     label: 'EPC',        emoji: '📋' },
+    { id: 'inspect-ai',     label: 'Inspect',    emoji: '🔍' },
+  ];
+
   return (
     <div className="flex h-dvh bg-[#020617] text-slate-200 overflow-hidden font-sans">
       <Sidebar 
@@ -122,6 +133,32 @@ const App: React.FC = () => {
             {renderContent()}
           </div>
         </main>
+
+        {/* MOBILE BOTTOM NAV HELIOS */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#020617]/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around px-1 pb-safe" style={{paddingBottom: 'max(8px, env(safe-area-inset-bottom))'}}>
+          {mobileNavItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl min-w-[50px] transition-all duration-200 ${
+                activeTab === item.id
+                  ? 'text-amber-500 bg-amber-500/10 border border-amber-500/20'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <span className="text-lg leading-none">{item.emoji}</span>
+              <span className="text-[9px] font-bold leading-none mt-0.5 truncate max-w-[50px]">{item.label}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl min-w-[50px] text-slate-500 hover:text-slate-300 transition-all"
+          >
+            <span className="text-lg leading-none">☰</span>
+            <span className="text-[9px] font-bold leading-none mt-0.5">Mai mult</span>
+          </button>
+        </nav>
+        {/* END MOBILE BOTTOM NAV */}
       </div>
     </div>
   );

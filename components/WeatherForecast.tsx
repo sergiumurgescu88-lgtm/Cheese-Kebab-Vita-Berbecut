@@ -128,10 +128,10 @@ export const WeatherForecast: React.FC = () => {
   ];
 
   return (
-    <div className="h-full flex flex-col xl:flex-row bg-[#020617] overflow-hidden border-x border-slate-800">
+    <div className="h-full flex flex-col xl:flex-row bg-[#020617] xl:overflow-hidden border-x border-slate-800">
       
       {/* MAIN DASHBOARD AREA */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-8">
+      <div className="xl:flex-1 xl:overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-8">
         
         {/* TOP: Site Header & Data Source Badge */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -326,7 +326,7 @@ export const WeatherForecast: React.FC = () => {
         </div>
 
         {/* MAPS & DIAGNOSTICS */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+        <div className="xl:flex-1 xl:overflow-y-auto p-6 space-y-8 custom-scrollbar">
            
            {/* Visual Map Layers */}
            <section>
@@ -336,19 +336,20 @@ export const WeatherForecast: React.FC = () => {
                  </h4>
                  <div className="text-[9px] bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-slate-500 font-mono uppercase tracking-tighter">Live v1.2</div>
               </div>
-              <div className="aspect-square bg-slate-900 rounded-3xl border border-slate-800 relative overflow-hidden mb-4 group shadow-2xl">
-                 <img 
-                   src={weatherService.getWeatherMapTileURL(activeMapLayer, 8, 144, 88)} 
-                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700"
-                   alt="Weather Map"
+              <div className="w-full bg-slate-900 rounded-3xl border border-slate-800 relative overflow-hidden mb-4 shadow-2xl">
+                 <img
+                   src="https://staticmap.openstreetmap.de/staticmap.php?center=45.18,28.80&zoom=9&size=600x350&maptype=mapnik&markers=45.18,28.80,ol-marker"
+                   className="w-full object-cover rounded-3xl"
+                   alt="Tulcea Delta Map"
                  />
-                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-8 h-8 border-2 border-amber-500/50 rounded-full animate-ping"></div>
-                    <div className="w-1 h-1 bg-amber-500 rounded-full shadow-[0_0_10px_#f59e0b]"></div>
-                 </div>
-                 <div className="absolute bottom-3 left-3 bg-slate-950/90 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-xl text-[9px] text-white font-mono shadow-xl uppercase tracking-widest">
-                    {activeMapLayer.replace('_new', '').replace('_', ' ')}
-                 </div>
+                 <a
+                   href="https://maps.google.com/?q=45.18,28.80&z=9"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="absolute bottom-3 right-3 bg-amber-500 text-black text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-lg"
+                 >
+                   ↗ Google Maps
+                 </a>
               </div>
               <div className="grid grid-cols-2 gap-2">
                  {mapLayers.map((layer)=>(

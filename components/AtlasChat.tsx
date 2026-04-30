@@ -21,7 +21,7 @@ export const AtlasChat: React.FC = () => {
         return parsed.map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
       } catch (e) { console.error(e); }
     }
-    return [{ role: 'assistant', text: "SMART RENOWABLE Systems Online. Integration Engine Active. 47 Modules loaded. Which API shall we architect?", timestamp: new Date() }];
+    return [{ role: 'assistant', text: "Helios by Sergiu Online. Integration Engine Activ. 47 Module incarcate. Ce API arhitectam?", timestamp: new Date() }];
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

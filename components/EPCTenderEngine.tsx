@@ -433,7 +433,7 @@ Stil juridic profesional, referințe la Codul Civil 2024.` : ''}`;
           <SectionHeader icon={<Building2 className="w-5 h-5" />} title="Date Client & Proiect" subtitle="Identificare proiect și beneficiar" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Field label="Denumire Proiect *" value={form.denumireProiect} onChange={v => upd('denumireProiect', v)} placeholder="ex: Parc FV Căzănești 9MW" icon={<FileSignature className="w-4 h-4" />} />
-            <Field label="Client / Beneficiar *" value={form.client} onChange={v => upd('client', v)} placeholder="ex: WALDEVAR Energy SRL" icon={<Building2 className="w-4 h-4" />} />
+            <Field label="Client / Beneficiar *" value={form.client} onChange={v => upd('client', v)} placeholder="ex: Helios by Sergiu Energy SRL" icon={<Building2 className="w-4 h-4" />} />
             <Select label="Județ" value={form.judet} onChange={v => upd('judet', v)} options={JUDETE} icon={<MapPin className="w-4 h-4" />} />
             <Field label="Localitate" value={form.localitate} onChange={v => upd('localitate', v)} placeholder="ex: Căzănești" icon={<MapPin className="w-4 h-4" />} />
             <Field label="Putere Instalată (MWp)" value={form.putere} onChange={v => upd('putere', v)} type="number" placeholder="ex: 9" icon={<Zap className="w-4 h-4" />} mono />
